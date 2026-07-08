@@ -1,6 +1,6 @@
-# Upgrade Guide: `v0.7.0-pilot-beta` to `v1.0.0-production`
+# Upgrade Guide: `v0.7.0-pilot-beta` to `v0.1.0`
 
-This guide defines the supported upgrade path from the pilot release to the production `v1` release.
+This guide defines the supported upgrade path from the pilot release to the `v0.1.0` release.
 
 ## What changed
 
@@ -24,7 +24,7 @@ That source state is exercised by `src/migration-compatibility.test.ts`.
 
 1. Back up the current pilot database.
 2. Stop write traffic to `actantosd`.
-3. Deploy the `v1.0.0-production` image or package.
+3. Deploy the `v0.1.0` image or package.
 4. Run:
 
 ```bash

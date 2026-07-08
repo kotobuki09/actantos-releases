@@ -11,10 +11,10 @@
 
 ## Artifact set
 
-- Docker image: `actantosd:v1.0.0-production`
+- Docker image: `actantosd:v0.1.0`
 - npm tarball: generated under `artifacts/npm/`
 - release manifest: `artifacts/release-manifest.json`
-- release notes: `docs/release-notes-v1.0.0-production.md`
+- release notes: `docs/release-notes-v0.1.0.md`
 
 ## Upgrade evidence
 

@@ -2,7 +2,7 @@
 
 **Pilot partner**: Mid-size fintech company (platform team, 8 engineers)
 **Date**: 2026-07-08
-**ActantOS version**: v1.0.0-production
+**ActantOS version**: v0.1.0
 **Agent**: GPT-4o via custom internal MCP client
 **Workflow**: Automated data pipeline agent — reads production metrics via MCP, generates report, opens GitHub PR
 

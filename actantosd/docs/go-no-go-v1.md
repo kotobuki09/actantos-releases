@@ -37,5 +37,5 @@ Before publishing:
 
 1. confirm the pilot evidence package is attached
 2. run the release checklist in `docs/release-checklist-v1.md`
-3. publish the Git tag `v1.0.0-production`
+3. publish the Git tag `v0.1.0`
 4. upload the npm tarball and release notes to the final release surface

@@ -2,7 +2,7 @@
 
 **Pilot partner**: Stealth SaaS startup (backend team, 4 engineers)
 **Date**: 2026-07-07
-**ActantOS version**: v1.0.0-production
+**ActantOS version**: v0.1.0
 **Agent**: Claude claude-sonnet-4 via Cursor IDE
 **Workflow**: Feature development session — adding a new API endpoint to a Node.js codebase
 

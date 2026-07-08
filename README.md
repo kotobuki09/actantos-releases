@@ -4,7 +4,7 @@
 
 ActantOS is a control plane for AI agents. It sits between your agent and everything it can touch — files, shell commands, databases, APIs, GitHub, MCP tools. Every action goes through ActantOS first. If ActantOS says no, the action never happens.
 
-**Latest release:** [v1.0.0-production](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0-production) — 2026-07-08
+**Latest release:** [v0.1.0](https://github.com/kotobuki09/actantos-releases/releases/tag/v0.1.0) — 2026-07-08
 
 ---
 
@@ -303,7 +303,7 @@ Two real-world workflows validated before this release:
 | [Security hardening](actantosd/docs/security-hardening.md) | Sandbox, redaction, fail-closed details |
 | [Support runbook](actantosd/docs/support-runbook.md) | Troubleshooting and recovery |
 | [Upgrade v0.7 → v1](actantosd/docs/upgrade-v0.7-to-v1.md) | Migration guide |
-| [Release notes](actantosd/docs/release-notes-v1.0.0-production.md) | What changed in v1.0.0 |
+| [Release notes](actantosd/docs/release-notes-v0.1.0.md) | What changed in v0.1.0 |
 
 ---
 
