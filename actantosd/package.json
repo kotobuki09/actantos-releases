@@ -1,0 +1,35 @@
+{
+  "name": "actantosd",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ActantOS enforcement kernel prototype",
+  "scripts": {
+    "dev": "node --experimental-strip-types --watch src/index.ts",
+    "db:migrate": "tsx src/database-admin.ts migrate",
+    "db:seed-demo": "tsx src/database-admin.ts seed-demo",
+    "policy:regression": "node --experimental-strip-types --test src/policy-regression.test.ts",
+    "policy:test": "tsx src/policy-test.ts",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts scripts/**/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "demo": "tsx demo.ts",
+    "smoke:fresh-install": "node scripts/fresh-install-smoke.mjs",
+    "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression",
+    "release:artifacts": "node scripts/build-release-artifacts.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "fastify": "^5.6.1",
+    "kysely": "^0.28.8",
+    "pg": "^8.16.3",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "pg-mem": "^3.0.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,118 @@
+[
+  {
+    "rule_id": "risk.shell.ambiguous",
+    "description": "Ambiguous shell strings require approval because they are not safe to execute directly as argv",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.target_type": "ambiguous_shell"
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  },
+  {
+    "rule_id": "risk.shell.git_push",
+    "description": "Require approval for any git push operation",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.command_family": "git",
+      "normalized.subcommand": "push"
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  },
+  {
+    "rule_id": "risk.shell.npm_publish",
+    "description": "Require approval for npm publish",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.command_family": "npm",
+      "normalized.subcommand": "publish"
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  },
+  {
+    "rule_id": "risk.shell.curl_wget",
+    "description": "Require approval for curl/wget network operations",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.network": true,
+      "normalized.command_family": "curl"
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  },
+  {
+    "rule_id": "risk.shell.wget",
+    "description": "Require approval for wget network operations",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.network": true,
+      "normalized.command_family": "wget"
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  },
+  {
+    "rule_id": "risk.shell.docker",
+    "description": "Require approval for docker operations",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.command_family": "docker"
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  },
+  {
+    "rule_id": "risk.shell.sudo",
+    "description": "Require approval for sudo operations",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.command_family": "sudo"
+    },
+    "approval_required": true,
+    "risk_class": "critical"
+  },
+  {
+    "rule_id": "risk.shell.gh_secret",
+    "description": "Require approval for GitHub secret operations",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.command_family": "gh",
+      "normalized.subcommand": "secret"
+    },
+    "approval_required": true,
+    "risk_class": "critical"
+  },
+  {
+    "rule_id": "risk.shell.destructive_delete",
+    "description": "Require approval for recursive destructive deletes",
+    "when": {
+      "tool.kind": "shell",
+      "normalized.destructive": true,
+      "normalized.recursive_delete": true
+    },
+    "approval_required": true,
+    "risk_class": "critical"
+  },
+  {
+    "rule_id": "risk.file.credential_path",
+    "description": "Credential file access is always critical risk — handled by Cedar forbid, not approval",
+    "when": {
+      "tool.kind": "file",
+      "normalized.credential_access": true
+    },
+    "approval_required": false,
+    "risk_class": "critical"
+  },
+  {
+    "rule_id": "risk.mcp.mutation",
+    "description": "Mutating MCP tool calls require approval",
+    "when": {
+      "tool.kind": "mcp",
+      "normalized.mutation": true
+    },
+    "approval_required": true,
+    "risk_class": "high"
+  }
+]

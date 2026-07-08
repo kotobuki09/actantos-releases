@@ -1,0 +1,15 @@
+.env
+.tmp/
+artifacts/
+node_modules/
+packages/
+src/
+tsconfig.tsbuildinfo
+dist/**/*.test.d.ts
+dist/**/*.test.d.ts.map
+dist/**/*.test.js
+dist/**/*.test.js.map
+dist/test-database.d.ts
+dist/test-database.d.ts.map
+dist/test-database.js
+dist/test-database.js.map

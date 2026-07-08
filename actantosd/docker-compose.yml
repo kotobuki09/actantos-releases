@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-actantos}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-actantos}"
+      POSTGRES_DB: "${POSTGRES_DB:-actantos}"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U actantos -d actantos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  actantosd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      [
+        "sh",
+        "-lc",
+        "if [ \"$$ACTANTOS_SEED_DEMO\" = \"true\" ]; then node dist/database-admin.js seed-demo; else node dist/database-admin.js migrate; fi && node dist/index.js",
+      ]
+    ports:
+      - "${PORT:-3100}:${PORT:-3100}"
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-postgres://actantos:actantos@postgres:5432/actantos}"
+      PORT: "${PORT:-3100}"
+      HOST: "${HOST:-0.0.0.0}"
+      ACTANTOS_API_KEY: "${ACTANTOS_API_KEY:-}"
+      HMAC_SECRET: "${HMAC_SECRET:-actantos-dev-secret}"
+      ACTANTOS_SEED_DEMO: "${ACTANTOS_SEED_DEMO:-true}"
+      CEDAR_POLICY_PATH: "${CEDAR_POLICY_PATH:-policies/default.cedar}"
+      ACTANTOS_MCP_UPSTREAM_URL: "${ACTANTOS_MCP_UPSTREAM_URL:-http://localhost:8080/sse}"
+      ACTANTOS_MCP_SERVER_ID: "${ACTANTOS_MCP_SERVER_ID:-upstream-mcp}"
+      # Optional: path to Cedar CLI binary inside container
+      # CEDAR_CLI_PATH: /usr/local/bin/cedar
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:' + (process.env.PORT ?? '3100') + '/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  postgres_data:

@@ -1,0 +1,15 @@
+{
+  "name": "@actantos/pi-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ActantOS Pi runtime adapter — guarded_read and guarded_bash",
+  "scripts": {
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.2"
+  }
+}

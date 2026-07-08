@@ -1,0 +1,21 @@
+FROM node:22-alpine
+# Minimal sandbox image for executing shell commands
+# Runs as non-root user 1001:1001
+
+# Install common tools but strip unnecessary extras
+RUN apk add --no-cache \
+    bash \
+    git \
+    curl \
+    && addgroup -g 1001 sandbox \
+    && adduser -u 1001 -G sandbox -s /bin/sh -D sandbox
+
+# Create workspace mount point
+RUN mkdir -p /workspace && chown sandbox:sandbox /workspace
+
+USER 1001:1001
+WORKDIR /workspace
+
+# Default entrypoint passes args directly to shell
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["echo", "no command specified"]
