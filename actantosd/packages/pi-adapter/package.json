@@ -1,6 +1,6 @@
 {
   "name": "@actantos/pi-adapter",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "ActantOS Pi runtime adapter — guarded_read and guarded_bash",

@@ -3,8 +3,10 @@
 artifacts/
 node_modules/
 packages/
-src/
 tsconfig.tsbuildinfo
+test-output.txt
+# Keep src/ in the published tarball so smoke:fresh-install and Docker builder
+# work from the GitHub release asset without depending on the plan monorepo.
 dist/**/*.test.d.ts
 dist/**/*.test.d.ts.map
 dist/**/*.test.js

@@ -1,6 +1,6 @@
 # ActantOS `/v1` API Contract
 
-This document freezes the supported HTTP contract for `v1.0.0-production`.
+This document freezes the supported HTTP contract for Quiet Open-Core **`v1.0.0`** (formerly referred to as `v1.0.0-production` in drafts).
 
 The goal of this contract is narrow:
 

@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "description": "ActantOS enforcement kernel prototype",
+  "actantos": {
+    "stage": "quiet-open-core",
+    "releaseNotesFile": "docs/release-notes-v1.0.1.md"
+  },
   "scripts": {
     "dev": "node --experimental-strip-types --watch src/index.ts",
     "db:migrate": "tsx src/database-admin.ts migrate",

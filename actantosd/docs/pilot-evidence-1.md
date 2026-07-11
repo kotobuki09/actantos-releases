@@ -1,8 +1,11 @@
 # Pilot Evidence — Workflow 1: AI Coding Agent (Claude)
 
+> **Classification: lab / fixture package.** Not sufficient for Proven Claim Gate until re-run by a living Design Partner Pilot. See `design_partner_window_plan.md`.  
+> Related **SAMPLE persona** (ops/story only): [pilot-sample-partner-coding-saas.md](./pilot-sample-partner-coding-saas.md).
+
 **Pilot partner**: Stealth SaaS startup (backend team, 4 engineers)
 **Date**: 2026-07-07
-**ActantOS version**: v0.1.0
+**ActantOS version**: v0.1.0 (historical label; canonical open-core tag is `v1.0.0`)
 **Agent**: Claude claude-sonnet-4 via Cursor IDE
 **Workflow**: Feature development session — adding a new API endpoint to a Node.js codebase
 

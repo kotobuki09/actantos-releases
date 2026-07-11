@@ -1,0 +1,75 @@
+name: Sign release assets (keyless cosign)
+
+# Binds signatures to this repository's GitHub Actions OIDC identity.
+# Does not store long-lived signing keys in the repository.
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to sign (e.g. v1.0.0)
+        required: true
+        default: v1.0.0
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.8.1
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          gh release download "$TAG" --repo "${{ github.repository }}" --dir assets
+          ls -la assets
+
+      - name: Sign blobs (keyless)
+        env:
+          COSIGN_YES: "true"
+        run: |
+          set -euo pipefail
+          cd assets
+          for f in actantosd-*.tgz release-manifest.json security-sbom.cdx.json; do
+            if [ -f "$f" ]; then
+              echo "Signing $f"
+              cosign sign-blob --yes --bundle "${f}.sigstore" "$f"
+            fi
+          done
+          ls -la *.sigstore || true
+
+      - name: Upload signature bundles to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bundles=(assets/*.sigstore)
+          if [ ${#bundles[@]} -eq 0 ]; then
+            echo "No signature bundles produced" >&2
+            exit 1
+          fi
+          gh release upload "$TAG" "${bundles[@]}" --repo "${{ github.repository }}" --clobber
+
+      - name: Verify one signed tarball
+        run: |
+          set -euo pipefail
+          cd assets
+          tgz=$(ls actantosd-*.tgz | head -n1)
+          cosign verify-blob \
+            --bundle "${tgz}.sigstore" \
+            --certificate-identity-regexp "https://github.com/${{ github.repository }}/.github/workflows/sign-release-assets.yml@.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$tgz"
+          echo "VERIFY_OK $tgz"
