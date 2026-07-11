@@ -67,5 +67,9 @@ jobs:
           set -euo pipefail
           cd assets
           tgz=$(ls actantosd-*.tgz | head -n1)
-          cosign verify-blob --bundle "${tgz}.sigstore" "$tgz"
+          cosign verify-blob \
+            --bundle "${tgz}.sigstore" \
+            --certificate-identity-regexp "https://github.com/${{ github.repository }}/.github/workflows/sign-release-assets.yml@.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$tgz"
           echo "VERIFY_OK $tgz"

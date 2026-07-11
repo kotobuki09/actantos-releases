@@ -44,6 +44,9 @@ Requires [cosign](https://docs.sigstore.dev/cosign/system_config/installation/).
 ```bash
 cosign verify-blob \
   --bundle actantosd-1.0.0.tgz.sigstore \
+  --certificate-identity-regexp \
+    'https://github.com/kotobuki09/actantos-releases/.github/workflows/sign-release-assets.yml@.*' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   actantosd-1.0.0.tgz
 ```
 

@@ -89,22 +89,41 @@ const tryCosign = () => {
     return
   }
 
+  const identityRegexp =
+    process.env.COSIGN_CERTIFICATE_IDENTITY_REGEXP ||
+    "https://github.com/kotobuki09/actantos-releases/.github/workflows/sign-release-assets.yml@.*"
+  const oidcIssuer =
+    process.env.COSIGN_CERTIFICATE_OIDC_ISSUER || "https://token.actions.githubusercontent.com"
+
   let verified = 0
   for (const name of candidates) {
     const sigPath = path.join(assetsDir, name)
-    // Prefer bundle verify when available
-    if (name.endsWith(".bundle") || name.endsWith(".sigstore")) {
-      const result = spawnSync(
-        "cosign",
-        ["verify-blob", "--bundle", sigPath, tarballPath],
-        { encoding: "utf8" },
-      )
-      if (result.status !== 0) {
-        fail(`cosign verify-blob failed for ${name}: ${result.stderr || result.stdout}`)
-      }
-      verified += 1
-      console.log(`OK cosign bundle: ${name}`)
+    // Prefer bundle verify when available; only verify bundles for the tarball name.
+    const isTarballBundle =
+      name === `${tarballName}.sigstore` ||
+      name === `${tarballName}.bundle` ||
+      (name.startsWith(tarballName) && (name.endsWith(".sigstore") || name.endsWith(".bundle")))
+    if (!isTarballBundle) continue
+
+    const result = spawnSync(
+      "cosign",
+      [
+        "verify-blob",
+        "--bundle",
+        sigPath,
+        "--certificate-identity-regexp",
+        identityRegexp,
+        "--certificate-oidc-issuer",
+        oidcIssuer,
+        tarballPath,
+      ],
+      { encoding: "utf8" },
+    )
+    if (result.status !== 0) {
+      fail(`cosign verify-blob failed for ${name}: ${result.stderr || result.stdout}`)
     }
+    verified += 1
+    console.log(`OK cosign bundle: ${name}`)
   }
 
   if (verified === 0 && requireCosign) {
