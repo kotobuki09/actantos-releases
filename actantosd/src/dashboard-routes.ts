@@ -18,6 +18,10 @@ const dashboardQuerySchema = z.object({
   api_key: z.string().min(1).optional(),
   section: z.enum(["agents", "sessions", "decisions", "approvals", "audit"]).optional().default("agents"),
   session_id: z.string().min(1).optional(),
+  final_decision: z.enum(["allow", "deny", "approval_required"]).optional(),
+  risk_class: z.string().min(1).optional(),
+  agent_id: z.string().min(1).optional(),
+  session_status: z.string().min(1).optional(),
 })
 
 const escapeHtml = (value: string | number | boolean | null | undefined): string =>
@@ -31,10 +35,22 @@ const buildDashboardHref = (
   tenantId: string,
   section: "agents" | "sessions" | "decisions" | "approvals" | "audit",
   apiKey?: string,
-): string =>
-  escapeHtml(
-    `/dashboard?tenant_id=${encodeURIComponent(tenantId)}&section=${section}${apiKey === undefined ? "" : `&api_key=${encodeURIComponent(apiKey)}`}`,
-  )
+  extras: Record<string, string | undefined> = {},
+): string => {
+  const params = new URLSearchParams({
+    tenant_id: tenantId,
+    section,
+  })
+  if (apiKey !== undefined) {
+    params.set("api_key", apiKey)
+  }
+  for (const [key, value] of Object.entries(extras)) {
+    if (value !== undefined && value.length > 0) {
+      params.set(key, value)
+    }
+  }
+  return escapeHtml(`/dashboard?${params.toString()}`)
+}
 
 const buildAuditHref = (
   tenantId: string,
@@ -133,6 +149,43 @@ const renderSessionsRows = (
     </table>
   `
 }
+
+const renderDecisionsFilter = (
+  tenantId: string,
+  apiKey: string | undefined,
+  finalDecision: string | undefined,
+  riskClass: string | undefined,
+  agentId: string | undefined,
+  sessionId: string | undefined,
+): string => `
+  <form class="filter-bar" method="get" action="/dashboard" data-decision-filters="true">
+    <input type="hidden" name="tenant_id" value="${escapeHtml(tenantId)}" />
+    <input type="hidden" name="section" value="decisions" />
+    ${apiKey === undefined ? "" : `<input type="hidden" name="api_key" value="${escapeHtml(apiKey)}" />`}
+    <label>
+      Decision
+      <select name="final_decision" aria-label="Filter by decision">
+        <option value="">All</option>
+        <option value="allow"${finalDecision === "allow" ? " selected" : ""}>allow</option>
+        <option value="deny"${finalDecision === "deny" ? " selected" : ""}>deny</option>
+        <option value="approval_required"${finalDecision === "approval_required" ? " selected" : ""}>approval_required</option>
+      </select>
+    </label>
+    <label>
+      Risk
+      <input name="risk_class" value="${escapeHtml(riskClass ?? "")}" placeholder="low|high|critical" aria-label="Filter by risk class" />
+    </label>
+    <label>
+      Agent
+      <input name="agent_id" value="${escapeHtml(agentId ?? "")}" placeholder="pi_demo" aria-label="Filter by agent id" />
+    </label>
+    <label>
+      Session
+      <input name="session_id" value="${escapeHtml(sessionId ?? "")}" placeholder="s_demo" aria-label="Filter by session id" />
+    </label>
+    <button type="submit">Apply filters</button>
+  </form>
+`
 
 const renderDecisionsRows = (
   decisions: readonly Awaited<ReturnType<typeof listDecisions>>[number][],
@@ -404,6 +457,13 @@ const renderDashboardPage = (
   killSwitches: readonly Awaited<ReturnType<typeof listActiveKillSwitches>>[number][],
   selectedSessionId: string | undefined,
   auditEvents: Awaited<ReturnType<typeof listSessionEvents>>,
+  filters: {
+    readonly final_decision?: "allow" | "deny" | "approval_required"
+    readonly risk_class?: string
+    readonly agent_id?: string
+    readonly session_id?: string
+    readonly session_status?: string
+  },
 ): string => `
 <!doctype html>
 <html lang="en">
@@ -495,6 +555,38 @@ const renderDashboardPage = (
       border-radius: 8px;
       padding: 18px;
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-alt);
+    }
+    .filter-bar label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .filter-bar input, .filter-bar select, .filter-bar button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 8px 10px;
+      font: inherit;
+    }
+    .filter-bar button {
+      background: rgba(127, 179, 255, 0.14);
+      border-color: rgba(127, 179, 255, 0.4);
+      cursor: pointer;
+      font-weight: 600;
     }
     .panel-header {
       display: flex;
@@ -755,6 +847,16 @@ const renderDashboardPage = (
         <h2>${section === "agents" ? "Agent inventory" : section === "sessions" ? "Session inventory" : section === "decisions" ? "Decision inventory" : section === "approvals" ? "Pending approvals" : "Audit timeline"}</h2>
         <div class="statusline">Backed by <code>${section === "agents" ? "/v1/agents" : section === "sessions" ? "/v1/sessions" : section === "decisions" ? "/v1/decisions" : section === "approvals" ? "/v1/approvals/pending" : "/v1/sessions/:session_id/events"}</code></div>
       </div>
+      ${section === "decisions"
+        ? renderDecisionsFilter(
+            tenantId,
+            apiKey,
+            filters.final_decision,
+            filters.risk_class,
+            filters.agent_id,
+            filters.session_id,
+          )
+        : ""}
       ${section === "agents"
         ? renderAgentsRows(agents)
         : section === "sessions"
@@ -944,10 +1046,18 @@ export const registerDashboardRoutes = (
       ? await listAgents(options.database, query.tenant_id)
       : []
     const sessions = query.section === "sessions" || query.section === "audit"
-      ? await listSessions(options.database, query.tenant_id)
+      ? await listSessions(options.database, query.tenant_id, {
+          ...(query.session_status !== undefined ? { status: query.session_status } : {}),
+          ...(query.agent_id !== undefined ? { agent_id: query.agent_id } : {}),
+        })
       : []
     const decisions = query.section === "decisions"
-      ? await listDecisions(options.database, query.tenant_id)
+      ? await listDecisions(options.database, query.tenant_id, {
+          ...(query.final_decision !== undefined ? { final_decision: query.final_decision } : {}),
+          ...(query.risk_class !== undefined ? { risk_class: query.risk_class } : {}),
+          ...(query.session_id !== undefined ? { session_id: query.session_id } : {}),
+          ...(query.agent_id !== undefined ? { agent_id: query.agent_id } : {}),
+        })
       : []
     const approvals = query.section === "approvals"
       ? await listPendingApprovals(options.database, query.tenant_id)
@@ -955,7 +1065,7 @@ export const registerDashboardRoutes = (
     const killSwitches = await listActiveKillSwitches(options.database, query.tenant_id)
     const selectedSessionId = query.section === "audit"
       ? query.session_id ?? sessions[0]?.external_id
-      : undefined
+      : query.session_id
     const auditEvents = query.section === "audit" && options.database !== undefined && selectedSessionId !== undefined
       ? await listSessionEvents(options.database, query.tenant_id, selectedSessionId)
       : []
@@ -963,6 +1073,24 @@ export const registerDashboardRoutes = (
     return reply
       .code(200)
       .type("text/html; charset=utf-8")
-      .send(renderDashboardPage(query.tenant_id, query.api_key, query.section, agents, sessions, decisions, approvals, killSwitches, selectedSessionId, auditEvents))
+      .send(renderDashboardPage(
+        query.tenant_id,
+        query.api_key,
+        query.section,
+        agents,
+        sessions,
+        decisions,
+        approvals,
+        killSwitches,
+        selectedSessionId,
+        auditEvents,
+        {
+          ...(query.final_decision !== undefined ? { final_decision: query.final_decision } : {}),
+          ...(query.risk_class !== undefined ? { risk_class: query.risk_class } : {}),
+          ...(query.agent_id !== undefined ? { agent_id: query.agent_id } : {}),
+          ...(query.session_id !== undefined ? { session_id: query.session_id } : {}),
+          ...(query.session_status !== undefined ? { session_status: query.session_status } : {}),
+        },
+      ))
   })
 }

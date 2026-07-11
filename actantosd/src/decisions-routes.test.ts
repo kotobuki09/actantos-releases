@@ -137,6 +137,12 @@ test("GET /v1/decisions returns recent allow, deny, and approval_required decisi
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), {
     tenant_id: "t_demo",
+    filters: {
+      final_decision: null,
+      risk_class: null,
+      session_id: null,
+      agent_id: null,
+    },
     decisions: [
       {
         decision_id: response.json().decisions[0].decision_id,
@@ -224,8 +230,62 @@ test("GET /v1/decisions returns an empty list for a tenant with no decisions", a
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), {
     tenant_id: "t_empty",
+    filters: {
+      final_decision: null,
+      risk_class: null,
+      session_id: null,
+      agent_id: null,
+    },
     decisions: [],
   })
+
+  await server.close()
+  await database.close()
+})
+
+test("GET /v1/decisions filters by final_decision, risk_class, session_id, and agent_id", async () => {
+  const database = await createTestDatabase()
+  const server = buildServer({
+    hmacSecret: "test-secret",
+    repository: new PostgresToolCallRepository(database),
+    database,
+  })
+  await server.ready()
+
+  for (const payload of [allowDecisionRequest, denyDecisionRequest, approvalDecisionRequest]) {
+    const intercept = await server.inject({
+      method: "POST",
+      url: "/v1/intercept/tool-call",
+      payload,
+    })
+    assert.ok(intercept.statusCode === 200 || intercept.statusCode === 201 || intercept.json().decision !== undefined)
+  }
+
+  const denyOnly = await server.inject({
+    method: "GET",
+    url: "/v1/decisions?tenant_id=t_demo&final_decision=deny",
+  })
+  assert.equal(denyOnly.statusCode, 200)
+  assert.equal(denyOnly.json().filters.final_decision, "deny")
+  assert.ok(denyOnly.json().decisions.length >= 1)
+  assert.ok(denyOnly.json().decisions.every((row: { final_decision: string }) => row.final_decision === "deny"))
+
+  const highRisk = await server.inject({
+    method: "GET",
+    url: "/v1/decisions?tenant_id=t_demo&risk_class=high",
+  })
+  assert.equal(highRisk.statusCode, 200)
+  assert.ok(highRisk.json().decisions.length >= 1)
+  assert.ok(highRisk.json().decisions.every((row: { risk_class: string }) => row.risk_class === "high"))
+
+  const bySession = await server.inject({
+    method: "GET",
+    url: "/v1/decisions?tenant_id=t_demo&session_id=s_demo&agent_id=pi_demo",
+  })
+  assert.equal(bySession.statusCode, 200)
+  assert.equal(bySession.json().filters.session_id, "s_demo")
+  assert.equal(bySession.json().filters.agent_id, "pi_demo")
+  assert.ok(bySession.json().decisions.length >= 1)
 
   await server.close()
   await database.close()

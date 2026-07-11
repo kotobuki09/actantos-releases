@@ -22,6 +22,10 @@ test("GET /v1/sessions returns seeded sessions for the dashboard", async () => {
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), {
     tenant_id: "t_demo",
+    filters: {
+      status: null,
+      agent_id: null,
+    },
     sessions: [
       {
         id: "22222222-2222-2222-2222-222222222222",
@@ -64,8 +68,42 @@ test("GET /v1/sessions returns an empty list for a tenant with no sessions", asy
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), {
     tenant_id: "t_empty",
+    filters: {
+      status: null,
+      agent_id: null,
+    },
     sessions: [],
   })
+
+  await server.close()
+  await database.close()
+})
+
+test("GET /v1/sessions filters by status and agent_id", async () => {
+  const database = await createTestDatabase()
+  const server = buildServer({
+    hmacSecret: "test-secret",
+    repository: new PostgresToolCallRepository(database),
+    database,
+  })
+  await server.ready()
+
+  const active = await server.inject({
+    method: "GET",
+    url: "/v1/sessions?tenant_id=t_demo&status=active&agent_id=pi_demo",
+  })
+  assert.equal(active.statusCode, 200)
+  assert.equal(active.json().sessions.length, 1)
+  assert.equal(active.json().filters.status, "active")
+  assert.equal(active.json().filters.agent_id, "pi_demo")
+
+  const missing = await server.inject({
+    method: "GET",
+    url: "/v1/sessions?tenant_id=t_demo&status=ended",
+  })
+  assert.equal(missing.statusCode, 200)
+  assert.deepEqual(missing.json().sessions, [])
+  assert.equal(missing.json().filters.status, "ended")
 
   await server.close()
   await database.close()

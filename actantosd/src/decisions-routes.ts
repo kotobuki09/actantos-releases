@@ -3,9 +3,22 @@ import { z, ZodError } from "zod"
 
 import type { Database } from "./database.ts"
 
+const finalDecisionSchema = z.enum(["allow", "deny", "approval_required"])
+
 const decisionsQuerySchema = z.object({
   tenant_id: z.string().min(1).optional().default("t_demo"),
+  final_decision: finalDecisionSchema.optional(),
+  risk_class: z.string().min(1).optional(),
+  session_id: z.string().min(1).optional(),
+  agent_id: z.string().min(1).optional(),
 })
+
+export type ListDecisionsOptions = {
+  readonly final_decision?: "allow" | "deny" | "approval_required"
+  readonly risk_class?: string
+  readonly session_id?: string
+  readonly agent_id?: string
+}
 
 type DecisionRow = {
   readonly decision_id: string
@@ -59,9 +72,33 @@ const serializeDecision = (row: DecisionRow) => ({
 export const listDecisions = async (
   database: Database | undefined,
   tenantId: string,
+  options: ListDecisionsOptions = {},
 ): Promise<readonly ReturnType<typeof serializeDecision>[]> => {
   if (database === undefined) {
     return []
+  }
+
+  const params: unknown[] = [tenantId]
+  const filters: string[] = ["pd.tenant_id = $1"]
+
+  if (options.final_decision !== undefined) {
+    params.push(options.final_decision)
+    filters.push(`pd.final_decision = $${String(params.length)}`)
+  }
+
+  if (options.risk_class !== undefined) {
+    params.push(options.risk_class)
+    filters.push(`pd.risk_class = $${String(params.length)}`)
+  }
+
+  if (options.session_id !== undefined) {
+    params.push(options.session_id)
+    filters.push(`s.external_id = $${String(params.length)}`)
+  }
+
+  if (options.agent_id !== undefined) {
+    params.push(options.agent_id)
+    filters.push(`ag.external_id = $${String(params.length)}`)
   }
 
   const rows = await database.query<DecisionRow>(
@@ -92,10 +129,10 @@ export const listDecisions = async (
         ON ag.id = tc.agent_id
       LEFT JOIN approvals a
         ON a.decision_id = pd.id
-      WHERE pd.tenant_id = $1
+      WHERE ${filters.join(" AND ")}
       ORDER BY pd.created_at DESC, pd.request_id DESC
     `,
-    [tenantId],
+    params,
   )
 
   return rows.map(serializeDecision)
@@ -108,10 +145,22 @@ export const registerDecisionsRoutes = (
   server.get("/v1/decisions", async (request, reply) => {
     try {
       const query = decisionsQuerySchema.parse(request.query)
-      const decisions = await listDecisions(options.database, query.tenant_id)
+      const listOptions: ListDecisionsOptions = {
+        ...(query.final_decision !== undefined ? { final_decision: query.final_decision } : {}),
+        ...(query.risk_class !== undefined ? { risk_class: query.risk_class } : {}),
+        ...(query.session_id !== undefined ? { session_id: query.session_id } : {}),
+        ...(query.agent_id !== undefined ? { agent_id: query.agent_id } : {}),
+      }
+      const decisions = await listDecisions(options.database, query.tenant_id, listOptions)
 
       return reply.code(200).send({
         tenant_id: query.tenant_id,
+        filters: {
+          final_decision: query.final_decision ?? null,
+          risk_class: query.risk_class ?? null,
+          session_id: query.session_id ?? null,
+          agent_id: query.agent_id ?? null,
+        },
         decisions,
       })
     } catch (error) {

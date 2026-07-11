@@ -5,7 +5,14 @@ import type { Database } from "./database.ts"
 
 const sessionsQuerySchema = z.object({
   tenant_id: z.string().min(1).optional().default("t_demo"),
+  status: z.string().min(1).optional(),
+  agent_id: z.string().min(1).optional(),
 })
+
+export type ListSessionsOptions = {
+  readonly status?: string
+  readonly agent_id?: string
+}
 
 type SessionRow = {
   readonly id: string
@@ -46,9 +53,23 @@ const serializeSession = (row: SessionRow) => ({
 export const listSessions = async (
   database: Database | undefined,
   tenantId: string,
+  options: ListSessionsOptions = {},
 ): Promise<readonly ReturnType<typeof serializeSession>[]> => {
   if (database === undefined) {
     return []
+  }
+
+  const params: unknown[] = [tenantId]
+  const filters: string[] = ["sessions.tenant_id = $1"]
+
+  if (options.status !== undefined) {
+    params.push(options.status)
+    filters.push(`sessions.status = $${String(params.length)}`)
+  }
+
+  if (options.agent_id !== undefined) {
+    params.push(options.agent_id)
+    filters.push(`agents.external_id = $${String(params.length)}`)
   }
 
   const rows = await database.query<SessionRow>(
@@ -68,10 +89,10 @@ export const listSessions = async (
       FROM sessions
       INNER JOIN agents
         ON agents.id = sessions.agent_id
-      WHERE sessions.tenant_id = $1
+      WHERE ${filters.join(" AND ")}
       ORDER BY sessions.started_at DESC, sessions.external_id ASC
     `,
-    [tenantId],
+    params,
   )
 
   return rows.map(serializeSession)
@@ -84,10 +105,18 @@ export const registerSessionsRoutes = (
   server.get("/v1/sessions", async (request, reply) => {
     try {
       const query = sessionsQuerySchema.parse(request.query)
-      const sessions = await listSessions(options.database, query.tenant_id)
+      const listOptions: ListSessionsOptions = {
+        ...(query.status !== undefined ? { status: query.status } : {}),
+        ...(query.agent_id !== undefined ? { agent_id: query.agent_id } : {}),
+      }
+      const sessions = await listSessions(options.database, query.tenant_id, listOptions)
 
       return reply.code(200).send({
         tenant_id: query.tenant_id,
+        filters: {
+          status: query.status ?? null,
+          agent_id: query.agent_id ?? null,
+        },
         sessions,
       })
     } catch (error) {
