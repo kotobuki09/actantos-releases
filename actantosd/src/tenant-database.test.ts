@@ -4,30 +4,31 @@ import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
+import type { Database, DatabaseClient } from "./database.ts"
 import { tenantContextSql, withTenantTransaction } from "./tenant-database.ts"
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 test("tenant context is transaction-local and parameterized", async () => {
   // Given: a database recording statements issued by the tenancy boundary
-  const statements: readonly { readonly sql: string; readonly params: readonly unknown[] }[] = []
-  const mutableStatements = statements as { sql: string; params: readonly unknown[] }[]
+  const statements: { sql: string; params: readonly unknown[] }[] = []
   const database = {
-    async query(): Promise<readonly Record<string, unknown>[]> {
+    async query() {
       return []
     },
-    async close(): Promise<void> {
+    async close() {
       return
     },
-    async transaction<T>(callback: (client: { query(sql: string, params?: readonly unknown[]): Promise<readonly Record<string, unknown>[]> }) => Promise<T>): Promise<T> {
-      return callback({
+    async transaction<T>(callback: (client: DatabaseClient) => Promise<T>): Promise<T> {
+      const client: DatabaseClient = {
         async query(sql, params = []) {
-          mutableStatements.push({ sql, params })
+          statements.push({ sql, params })
           return []
         },
-      })
+      }
+      return callback(client)
     },
-  }
+  } satisfies Database
 
   // When: work is executed for a tenant
   await withTenantTransaction(database, "t_alpha", async () => "done")
