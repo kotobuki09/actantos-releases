@@ -1,10 +1,10 @@
 {
   "release_version": "v1.0.0",
   "stage": "quiet-open-core",
-  "generated_at": "2026-07-11T05:33:14.759Z",
+  "generated_at": "2026-07-11T05:42:11.442Z",
   "npm_package": {
     "file": "npm/actantosd-1.0.0.tgz",
-    "sha256": "fbd340232dfca3facf904a49dc4bbed922620e39dedea7aec608d1b8ddb2f825"
+    "sha256": "bd73796219fed0869f5245568569a15bc5a3d8e5d16c6d4f7ae22cd27f45e6c4"
   },
   "docker_image": {
     "image": "actantosd:v1.0.0",
