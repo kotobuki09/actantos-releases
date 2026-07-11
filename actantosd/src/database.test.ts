@@ -31,7 +31,7 @@ test("runSqlDirectory applies sql files in lexical order", async () => {
       },
     },
     "sql",
-    tempRoot,
+    { rootDirectory: tempRoot },
   )
 
   assert.deepEqual(executedSql, ["select 1;", "select 2;"])

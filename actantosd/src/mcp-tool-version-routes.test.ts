@@ -4,7 +4,7 @@ import test from "node:test"
 import { newDb } from "pg-mem"
 
 import type { Database } from "./database.ts"
-import { migrateDatabase, seedDemoData } from "./database.ts"
+import { migrateDatabaseForUnitTests, seedDemoData } from "./database.ts"
 import { buildServer } from "./server.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
 
@@ -45,7 +45,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabase(database)
+  await migrateDatabaseForUnitTests(database)
   await seedDemoData(database)
 
   return database

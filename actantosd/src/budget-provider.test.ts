@@ -4,7 +4,7 @@ import test from "node:test"
 import { newDb } from "pg-mem"
 
 import { PostgresBudgetProvider } from "./budget-provider.ts"
-import { migrateDatabase, seedDemoData, type Database } from "./database.ts"
+import { migrateDatabaseForUnitTests, seedDemoData, type Database } from "./database.ts"
 
 const createTestDatabase = async (): Promise<Database> => {
   const memoryDb = newDb()
@@ -42,7 +42,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabase(database)
+  await migrateDatabaseForUnitTests(database)
   await seedDemoData(database)
 
   return database

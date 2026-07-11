@@ -89,15 +89,23 @@ const createQueryClient = (
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(currentDirectory, "..")
 
+export type RunSqlDirectoryOptions = {
+  readonly rootDirectory?: string
+  /** Exact file names to skip (e.g. RLS migrations unsupported by pg-mem). */
+  readonly excludeFileNames?: readonly string[]
+}
+
 export const runSqlDirectory = async (
   database: DatabaseClient,
   relativeDirectoryPath: string,
-  rootDirectory: string = projectRoot,
+  options: RunSqlDirectoryOptions = {},
 ): Promise<void> => {
+  const rootDirectory = options.rootDirectory ?? projectRoot
+  const exclude = new Set(options.excludeFileNames ?? [])
   const directoryPath = path.join(rootDirectory, relativeDirectoryPath)
   const directoryEntries = await readdir(directoryPath, { withFileTypes: true })
   const sqlFileNames = directoryEntries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".sql") && !exclude.has(entry.name))
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right))
 
@@ -114,8 +122,19 @@ export const createDatabase = (connectionString: string): Database =>
     }),
   )
 
+/** Full production migrations including PostgreSQL RLS (008). */
 export const migrateDatabase = async (database: Database): Promise<void> => {
   await runSqlDirectory(database, "sql/migrations")
+}
+
+/**
+ * Unit-test migrations for pg-mem: identity + composite FKs only.
+ * RLS (008_tenant_rls.sql) requires real PostgreSQL and is exercised by integration fixtures.
+ */
+export const migrateDatabaseForUnitTests = async (database: Database): Promise<void> => {
+  await runSqlDirectory(database, "sql/migrations", {
+    excludeFileNames: ["008_tenant_rls.sql"],
+  })
 }
 
 export const seedDemoData = async (database: Database): Promise<void> => {
