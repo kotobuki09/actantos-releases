@@ -1,32 +1,97 @@
 {
   "schemaVersion": 1,
   "stage": "stage3-governed-enterprise-autonomy",
-  "aggregateStatus": "active",
+  "aggregateStatus": "done",
   "capabilities": [
     {
       "id": "foundation",
-      "status": "future",
-      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+      "status": "done",
+      "evidence": {
+        "tests": [
+          "src/tenant-request.test.ts",
+          "src/tenant-database.test.ts",
+          "src/oidc-auth.test.ts",
+          "src/service-principal-auth.test.ts",
+          "src/stage3-release-gate.test.ts"
+        ],
+        "manualQa": [
+          ".omo/evidence/task-5-stage3-governed-enterprise-autonomy/verification.md"
+        ],
+        "documentation": [
+          "docs/STAGE3_HOSTED.md",
+          "docs/STAGE3_RUNBOOK.md",
+          "../docs/STAGE3_CAPABILITY_LEDGER.md"
+        ]
+      }
     },
     {
       "id": "isolation",
-      "status": "future",
-      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+      "status": "done",
+      "evidence": {
+        "tests": [
+          "src/isolation-provider.test.ts",
+          "src/gvisor-provider.test.ts",
+          "src/stage3-release-gate.test.ts"
+        ],
+        "manualQa": [
+          ".omo/evidence/task-8-stage3-governed-enterprise-autonomy/verification.md"
+        ],
+        "documentation": [
+          "docs/STAGE3_HOSTED.md"
+        ]
+      }
     },
     {
       "id": "credentials",
-      "status": "future",
-      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+      "status": "done",
+      "evidence": {
+        "tests": [
+          "src/credential-broker.test.ts",
+          "src/stage3-release-gate.test.ts"
+        ],
+        "manualQa": [
+          ".omo/evidence/task-10-stage3-governed-enterprise-autonomy/verification.md"
+        ],
+        "documentation": [
+          "docs/STAGE3_HOSTED.md",
+          "docs/STAGE3_RUNBOOK.md"
+        ]
+      }
     },
     {
       "id": "evidence",
-      "status": "future",
-      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+      "status": "done",
+      "evidence": {
+        "tests": [
+          "src/evidence-archive.test.ts",
+          "src/audit-outbox.test.ts",
+          "src/stage3-release-gate.test.ts"
+        ],
+        "manualQa": [
+          ".omo/evidence/task-9-stage3-governed-enterprise-autonomy/verification.md"
+        ],
+        "documentation": [
+          "docs/STAGE3_HOSTED.md"
+        ]
+      }
     },
     {
       "id": "siem",
-      "status": "future",
-      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+      "status": "done",
+      "evidence": {
+        "tests": [
+          "src/siem-connectors.test.ts",
+          "src/audit-outbox.test.ts",
+          "src/stage3-release-gate.test.ts"
+        ],
+        "manualQa": [
+          ".omo/evidence/task-11-stage3-governed-enterprise-autonomy/verification.md"
+        ],
+        "documentation": [
+          "docs/STAGE3_HOSTED.md",
+          "docs/STAGE3_RUNBOOK.md"
+        ]
+      }
     }
   ]
 }

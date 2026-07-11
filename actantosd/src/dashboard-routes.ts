@@ -14,7 +14,7 @@ type RegisterDashboardRoutesOptions = {
 }
 
 const dashboardQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
   api_key: z.string().min(1).optional(),
   section: z.enum(["agents", "sessions", "decisions", "approvals", "audit"]).optional().default("agents"),
   session_id: z.string().min(1).optional(),

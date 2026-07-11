@@ -77,9 +77,13 @@ test("ops routes deny without OIDC bearer when oidc is configured", async () => 
 
 test("hardened API key auth rejects query-string secrets", async () => {
   const server = buildServer({ apiKey: "secret", hardenedAuth: true })
-  const denied = await server.inject({ method: "GET", url: "/v1/sessions?api_key=secret" })
+  const denied = await server.inject({ method: "GET", url: "/v1/sessions?api_key=secret&tenant_id=t_demo" })
   assert.equal(denied.statusCode, 401)
-  const allowed = await server.inject({ method: "GET", url: "/v1/sessions", headers: { "x-actantos-api-key": "secret" } })
+  const allowed = await server.inject({
+    method: "GET",
+    url: "/v1/sessions?tenant_id=t_demo",
+    headers: { "x-actantos-api-key": "secret" },
+  })
   assert.equal(allowed.statusCode, 200)
   await server.close()
 })

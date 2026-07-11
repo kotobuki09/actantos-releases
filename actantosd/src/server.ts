@@ -204,12 +204,22 @@ export const buildServer = (options: BuildServerOptions = {}) => {
       oidc_configured: oidc !== undefined,
       hosted_path: "docker-compose",
     }
+    const stage3 = {
+      foundation: true,
+      isolation_contract: true,
+      gvisor_provider: true,
+      credential_broker: true,
+      evidence_archive: true,
+      siem_connectors: true,
+      tenant_defaults_removed: true,
+    }
 
     if (database === undefined) {
       return reply.code(200).send({
         status: "ready",
         database: "not_configured",
         stage2,
+        stage3,
       })
     }
 
@@ -219,6 +229,7 @@ export const buildServer = (options: BuildServerOptions = {}) => {
         status: "ready",
         database: "connected",
         stage2,
+        stage3,
       })
     } catch (error) {
       server.log.warn(error, "Readiness database probe failed")
@@ -226,6 +237,7 @@ export const buildServer = (options: BuildServerOptions = {}) => {
         status: "not_ready",
         database: "unreachable",
         stage2,
+        stage3,
       })
     }
   })

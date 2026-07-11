@@ -6,7 +6,7 @@ import type { Database } from "./database.ts"
 const finalDecisionSchema = z.enum(["allow", "deny", "approval_required"])
 
 const decisionsQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
   final_decision: finalDecisionSchema.optional(),
   risk_class: z.string().min(1).optional(),
   session_id: z.string().min(1).optional(),

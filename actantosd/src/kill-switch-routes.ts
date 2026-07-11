@@ -9,11 +9,11 @@ const killSwitchBodySchema = z.object({
   scope_type: z.enum(["tenant", "agent", "session", "tool"]),
   scope_id: z.string().min(1),
   reason: z.string().min(1),
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
 })
 
 const killSwitchQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
 })
 
 type KillSwitchRow = {

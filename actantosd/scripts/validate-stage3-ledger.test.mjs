@@ -19,15 +19,21 @@ test("Stage 2 inventory remains characterized when Stage 3 ledger is introduced"
   assert.deepEqual(capabilityIds, ["S2-1", "S2-2", "S2-3", "S2-4", "S2-5"])
 })
 
-test("Stage 3 ledger is valid when all capabilities are future and aggregate is active", async () => {
+test("Stage 3 ledger is valid when capability states match derived aggregate", async () => {
   // Given: the product-owned Stage 3 ledger
   const input = await readFile(new URL("../stage3-capabilities.json", import.meta.url), "utf8")
 
   // When: the ledger is validated
   const result = validateStage3Ledger(input)
 
-  // Then: it reports the derived active aggregate
-  assert.deepEqual(result, { aggregateStatus: "active", capabilityCount: 5 })
+  // Then: aggregate is derived from capability statuses (all done → done)
+  assert.equal(result.capabilityCount, 5)
+  assert.ok(result.aggregateStatus === "active" || result.aggregateStatus === "done")
+  const parsed = JSON.parse(input)
+  const derived = parsed.capabilities.every((capability) => capability.status === "done")
+    ? "done"
+    : "active"
+  assert.equal(result.aggregateStatus, derived)
 })
 
 test("Stage 3 ledger rejects aggregate done when any capability is incomplete", () => {
@@ -77,6 +83,6 @@ test("Stage 3 ledger file can be validated through the CLI", async () => {
   const { run } = await import("./validate-stage3-ledger.mjs")
   const result = await run([ledgerPath], productRoot)
 
-  // Then: it reports truthful success
-  assert.equal(result, "Stage 3 ledger valid: 5 capabilities, aggregate active")
+  // Then: it reports truthful success for the derived aggregate
+  assert.match(result, /^Stage 3 ledger valid: 5 capabilities, aggregate (active|done)$/u)
 })
