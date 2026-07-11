@@ -10,7 +10,7 @@ import {
   filterGatewayTools,
 } from "./mcp-gateway.ts"
 import type { Database } from "./database.ts"
-import { migrateDatabase, seedDemoData } from "./database.ts"
+import { migrateDatabaseForUnitTests, seedDemoData } from "./database.ts"
 import { createInterceptService } from "./intercept-service.ts"
 import { recordToolResult } from "./tool-result-service.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
@@ -96,7 +96,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabase(database)
+  await migrateDatabaseForUnitTests(database)
   await seedDemoData(database)
 
   return database
