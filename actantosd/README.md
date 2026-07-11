@@ -2,19 +2,19 @@
 
 In-path runtime permission gateway for AI agents. Intercepts every tool call, evaluates Cedar policy + risk rules, and returns a **Decision** (`allow` | `deny` | `approval_required`) before execution happens.
 
-## Stage: Quiet Open-Core `v1.0.0` / Design Partner
+## Stage: Quiet Open-Core `v1.0.x` · Stage 2 Control Plane **done**
 
 | | |
 | --- | --- |
-| **What this tag means** | Installable self-host Enforcement Kernel, frozen `/v1` API, lab-verified |
-| **What this tag does *not* mean** | Battle-tested living-customer proof (**Proven Claim Gate** is separate) |
+| **Ship rule** | Built + tests pass = done (no partner gate) |
+| **What this tag means** | Installable self-host Enforcement Kernel + Stage 2 ops (filters, metrics home, policy dry-run, webhook approvals, optional OIDC, Compose hosted path) |
+| **What this tag does *not* mean** | Multi-tenant commercial SaaS, Firecracker isolation, WORM/SIEM productization (Stage 3) |
 | **Self-Host Free Surface** | Kernel, web Approval, basic dashboard, optional Slack, templates, local evidence — see [`docs/open-core-surface.md`](docs/open-core-surface.md) |
+| **Stage 2 ops** | Session/decision filters, `/v1/metrics/usage` ops_home, policy bundle dry-run, approval channels (webhook), OIDC bearer for ops — see [`docs/HOSTED.md`](../docs/HOSTED.md) and [`docs/STAGE2_INVENTORY.md`](../docs/STAGE2_INVENTORY.md) |
 | **Pilot path** | **Pi Primary Path** first; **MCP Optional Path** supported — [`docs/pilot-onboarding.md`](docs/pilot-onboarding.md) |
 | **Default policy** | **Balanced Coding Policy** (Strict opt-in) — [`docs/pilot-policy-templates.md`](docs/pilot-policy-templates.md) |
-| **Design Partner kit** | Fit Checklist, Success Package, Auto-Kill — [`docs/design-partner-kit.md`](docs/design-partner-kit.md) |
-| **Pilot ops** | Living pilot chain status + runbooks — [`docs/pilot-ops-index.md`](docs/pilot-ops-index.md) |
 
-Quiet publish only — no launch campaign required. Lab `docs/pilot-evidence-*.md` packages are **fixtures**, not living partner proof.
+Quiet publish only — no launch campaign required.
 
 The daemon defaults to port `3100` so it does not collide with the promotion website that already uses `localhost:3000` in this workspace.
 

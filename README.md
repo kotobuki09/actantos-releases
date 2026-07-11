@@ -8,8 +8,8 @@
 | --- | --- |
 | **Latest public release** | **[v1.0.1 Portable Agent Test](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1)** (2026-07-11) |
 | **Website** | [actantos.io/v1](https://actantos.io/v1) |
-| **Stage** | Stage 1 done · Stage 2 active |
-| **What this means** | Self-host Enforcement Kernel shipped (tests pass). Control-plane Stage 2 in active build. |
+| **Stage** | Stage 1 done · Stage 2 done |
+| **What this means** | Self-host Enforcement Kernel + control-plane ops shipped (filters, metrics, policy dry-run, webhook channels, optional OIDC, Compose hosted path). |
 | **Ship rule** | Built + tests pass = done (no partner gate). |
 
 This repository is the **public release surface** (artifacts, notes, installable tree).
