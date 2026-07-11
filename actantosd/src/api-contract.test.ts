@@ -31,6 +31,7 @@ const postgresOnlyRoutes = [
   { method: "GET", url: "/v1/policy-bundles/:id" },
   { method: "POST", url: "/v1/policy-bundles" },
   { method: "POST", url: "/v1/policy-bundles/:id/activate" },
+  { method: "POST", url: "/v1/policy-bundles/:id/test" },
   { method: "GET", url: "/v1/rate-limits" },
   { method: "PUT", url: "/v1/rate-limits" },
   { method: "GET", url: "/v1/risk-rules" },

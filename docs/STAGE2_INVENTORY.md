@@ -25,7 +25,7 @@
 | ID | Capability | Current state | Gap | Acceptance tests (target) |
 |----|------------|---------------|-----|---------------------------|
 | **S2-1** | Operator visibility | Routes + basic dashboard exist; **session/decision list filters shipped** (`status`, `agent_id`, `final_decision`, `risk_class`, `session_id`) + dashboard decision filter bar | Richer metrics home UX still open | Filter contract tests green; remaining: metrics home polish |
-| **S2-2** | Policy operations | Bundle/risk routes + policy dashboard page partial | Activate/test dry-run UX, safer bundle promotion | `policy-bundle-activation` E2E; `policy-test` UI/API parity |
+| **S2-2** | Policy operations | Bundle create/activate + dashboard; **dry-run test API shipped** (`POST /v1/policy-bundles/:id/test`) + policy dashboard dry-run form | Risk-rules ops UX polish still open | Bundle test route green; activation unchanged |
 | **S2-3** | Multi-channel approvals | Web + Slack optional | Channel interface; Teams/webhook channels | `approval-channel-*.test.ts`; decide path with non-web channel |
 | **S2-4** | Federated identity | Not present | OIDC (then SAML/SCIM) for operators/approvers | Auth middleware tests; unauthenticated deny on ops routes |
 | **S2-5** | Hosted control plane | Docker Compose self-host | Single-tenant package, health probes, upgrade notes | Compose health smoke; docs install path |

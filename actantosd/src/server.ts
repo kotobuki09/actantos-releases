@@ -171,7 +171,7 @@ export const buildServer = (options: BuildServerOptions = {}) => {
   if (database !== undefined) {
     registerBudgetRoutes(server, { database })
     registerMcpToolVersionRoutes(server, { database })
-    registerPolicyBundleRoutes(server, { database, policyValidator })
+    registerPolicyBundleRoutes(server, { database, policyValidator, cedarProvider })
     registerRateLimitRoutes(server, { database })
     registerRiskRulesRoutes(server, { database })
     registerMetricsDashboardRoutes(server, { database })

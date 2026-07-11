@@ -70,8 +70,9 @@ export const renderPolicyDashboardPage = (options: { readonly tenantId: string; 
     .action-button { border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--text); background:var(--panel-alt); cursor:pointer; font:inherit; }
     .action-button:disabled { opacity:0.6; cursor:default; }
     .field-group { display:grid; gap:8px; }
-    input[type="text"], textarea { width:100%; border:1px solid var(--border); border-radius:8px; background:var(--panel-alt); color:var(--text); padding:10px 12px; font:inherit; }
+    input[type="text"], select, textarea { width:100%; border:1px solid var(--border); border-radius:8px; background:var(--panel-alt); color:var(--text); padding:10px 12px; font:inherit; }
     textarea { min-height:240px; resize:vertical; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:13px; }
+    #policy-test-request { min-height:280px; }
     .inline-option { display:flex; align-items:center; gap:8px; }
     .form-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .feedback[data-state="success"] { color:var(--good); }
@@ -157,6 +158,48 @@ when {
       </form>
       <a class="back-link" href="${buildPolicyDashboardHref(options.tenantId, options.apiKey)}">Refresh this policy view</a>
     </section>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Dry-run against a stored bundle</h2>
+          <p>Evaluate a candidate tool call with <code>dry_run=true</code> against a stored bundle without activating it.</p>
+        </div>
+        <div class="secondary">Backed by <code>/v1/policy-bundles/:id/test</code></div>
+      </div>
+      <form data-policy-test-form="true">
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="policy-test-bundle">Bundle</label>
+            <select id="policy-test-bundle" name="bundle_id" aria-label="Bundle to dry-run">
+              ${options.bundles.map((row) => `
+                <option value="${escapeHtml(row.id)}"${row.active ? " selected" : ""}>
+                  ${escapeHtml(row.version)}${row.active ? " (active)" : ""}
+                </option>
+              `).join("")}
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="policy-test-request">Intercept request JSON</label>
+            <textarea id="policy-test-request" name="request_json" spellcheck="false">{escapeHtml(JSON.stringify({
+  request_id: "req_policy_dry_run_demo",
+  tenant_id: options.tenantId,
+  agent: { id: "pi_demo", runtime_type: "pi", environment: "dev", risk_tier: "low" },
+  subject: { user_id: "u_demo", role: "developer" },
+  session: { id: "s_demo", cwd: "/workspace", purpose: "policy dry-run" },
+  tool: { kind: "file", name: "guarded_read", operation: "ReadFile" },
+  resource: { id: "/workspace/README.md", kind: "file", path: "/workspace/README.md" },
+  action: { operation: "ReadFile", args: { path: "/workspace/README.md" } },
+  normalized: { verb: "read", mutation: false, destructive: false, network: false, credential_access: false, risk_class: "low" }
+}, null, 2))}</textarea>
+          </div>
+          <div class="form-actions">
+            <button class="action-button" type="submit">Run dry-run</button>
+            <span class="feedback" data-policy-test-feedback="true" data-state="idle">Pick a bundle and evaluate without promotion.</span>
+          </div>
+          <pre class="preview" data-policy-test-result="true">No dry-run result yet.</pre>
+        </div>
+      </form>
+    </section>
     <script>
       const tenantId = ${JSON.stringify(options.tenantId)};
       const dashboardApiKey = ${JSON.stringify(options.apiKey ?? "")};
@@ -175,6 +218,14 @@ when {
         }
         feedback.dataset.state = state;
         feedback.textContent = message;
+      };
+      const testFeedback = document.querySelector("[data-policy-test-feedback='true']");
+      const setTestFeedback = (state, message) => {
+        if (!(testFeedback instanceof HTMLElement)) {
+          return;
+        }
+        testFeedback.dataset.state = state;
+        testFeedback.textContent = message;
       };
       document.addEventListener("click", async (event) => {
         const target = event.target;
@@ -237,6 +288,49 @@ when {
           window.location.reload();
         } catch {
           setFeedback("error", "Upload failed. Retry when the dashboard can reach the API.");
+          submitButton.disabled = false;
+        }
+      });
+      const testForm = document.querySelector("[data-policy-test-form='true']");
+      testForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!(testForm instanceof HTMLFormElement)) {
+          return;
+        }
+        const submitButton = testForm.querySelector("button[type='submit']");
+        const resultNode = document.querySelector("[data-policy-test-result='true']");
+        if (!(submitButton instanceof HTMLButtonElement) || !(resultNode instanceof HTMLElement)) {
+          return;
+        }
+        submitButton.disabled = true;
+        setTestFeedback("pending", "Running dry-run against selected bundle...");
+        const formData = new FormData(testForm);
+        const bundleId = String(formData.get("bundle_id") ?? "");
+        let requestPayload;
+        try {
+          requestPayload = JSON.parse(String(formData.get("request_json") ?? "{}"));
+        } catch {
+          setTestFeedback("error", "Request JSON is invalid.");
+          submitButton.disabled = false;
+          return;
+        }
+        try {
+          const response = await fetch(appendApiKey("/v1/policy-bundles/" + encodeURIComponent(bundleId) + "/test"), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ request: requestPayload }),
+          });
+          const body = await response.json().catch(() => null);
+          resultNode.textContent = JSON.stringify(body, null, 2);
+          if (!response.ok) {
+            setTestFeedback("error", "Dry-run failed. Inspect the result payload.");
+            submitButton.disabled = false;
+            return;
+          }
+          setTestFeedback("success", "Dry-run complete: " + String(body?.decision ?? "unknown") + " (" + String(body?.reason_code ?? "n/a") + ")");
+          submitButton.disabled = false;
+        } catch {
+          setTestFeedback("error", "Dry-run failed. Retry when the dashboard can reach the API.");
           submitButton.disabled = false;
         }
       });

@@ -818,6 +818,7 @@ const renderDashboardPage = (
         <a class="tab${section === "decisions" ? " active" : ""}" href="${buildDashboardHref(tenantId, "decisions", apiKey)}">Decisions</a>
         <a class="tab${section === "approvals" ? " active" : ""}" href="${buildDashboardHref(tenantId, "approvals", apiKey)}">Pending Approvals</a>
         <a class="tab${section === "audit" ? " active" : ""}" href="${buildAuditHref(tenantId, selectedSessionId, apiKey)}">Audit Timeline</a>
+        <a class="tab" href="${escapeHtml(`/dashboard/policy?tenant_id=${encodeURIComponent(tenantId)}${apiKey === undefined ? "" : `&api_key=${encodeURIComponent(apiKey)}`}`)}">Policy Ops</a>
       </nav>
     </div>
   </header>
