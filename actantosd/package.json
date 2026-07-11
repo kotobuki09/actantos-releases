@@ -1,12 +1,12 @@
 {
   "name": "actantosd",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "ActantOS enforcement kernel prototype",
+  "description": "ActantOS enforcement kernel and governed enterprise autonomy control plane",
   "actantos": {
-    "stage": "quiet-open-core",
-    "releaseNotesFile": "docs/release-notes-v1.0.1.md"
+    "stage": "stage3-governed-enterprise-autonomy",
+    "releaseNotesFile": "docs/release-notes-v1.1.0.md"
   },
   "scripts": {
     "dev": "node --experimental-strip-types --watch src/index.ts",
