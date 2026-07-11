@@ -1,6 +1,6 @@
 {
   "name": "actantosd",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "ActantOS enforcement kernel prototype",
@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "demo": "tsx demo.ts",
+    "quickstart": "node scripts/quickstart.mjs",
     "smoke:fresh-install": "node scripts/fresh-install-smoke.mjs",
     "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression",
     "release:artifacts": "node scripts/build-release-artifacts.mjs"

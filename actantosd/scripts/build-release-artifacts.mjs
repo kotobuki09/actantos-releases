@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url"
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const artifactsDir = path.join(rootDir, "artifacts")
 const npmArtifactsDir = path.join(artifactsDir, "npm")
-const releaseVersion = "v1.0.0-production"
+const packageJson = JSON.parse(readFileSync(path.join(rootDir, "package.json"), "utf8"))
+const releaseVersion = `v${packageJson.version}`
 
 const runCommand = (command, args) => {
   execFileSync(command, args, {
@@ -26,7 +27,7 @@ mkdirSync(npmArtifactsDir, { recursive: true })
 
 runCommand("npm", ["pack", "--pack-destination", npmArtifactsDir])
 
-const packageName = "actantosd-0.1.0.tgz"
+const packageName = `actantosd-${packageJson.version}.tgz`
 const packagePath = path.join(npmArtifactsDir, packageName)
 const manifestPath = path.join(artifactsDir, "release-manifest.json")
 
@@ -40,12 +41,12 @@ writeFileSync(
       sha256: sha256File(packagePath),
     },
     docker_image: {
-      image: "actantosd:v1.0.0-production",
-      build_command: "docker build -t actantosd:v1.0.0-production .",
+      image: `actantosd:${releaseVersion}`,
+      build_command: `docker build -t actantosd:${releaseVersion} .`,
     },
     github_release: {
-      tag: "v1.0.0-production",
-      notes_file: "docs/release-notes-v1.0.0-production.md",
+      tag: releaseVersion,
+      notes_file: `docs/release-notes-${releaseVersion}.md`,
     },
   }, null, 2)}\n`,
 )

@@ -6,7 +6,7 @@
 
 | | |
 | --- | --- |
-| **Latest public release** | **[v1.0.0 Quiet Open-Core](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0)** (2026-07-09) |
+| **Latest public release** | **[v1.0.1 Portable Agent Test](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1)** (2026-07-11) |
 | **Website** | [actantos.io/v1](https://actantos.io/v1) |
 | **Stage** | Open-Core / Design Partner |
 | **What this means** | Installable, API-frozen, lab-verified self-host kernel |
@@ -63,6 +63,16 @@ Your AI agent (Cursor, Claude, GPT, custom…)
 
 ---
 
+## What’s in v1.0.1
+
+- One-command portable install and agent test with `npm run quickstart`
+- Windows, macOS, and Linux support through Node.js 22+
+- No Docker or Postgres required for the first test
+- Verified allow, deny, approval-required, and audit-evidence decisions
+- Clean server shutdown, including native Windows process ownership
+
+The frozen `/v1` API and the v1.0.0 enforcement behavior are unchanged.
+
 ## What’s in v1.0.0 (Quiet Open-Core)
 
 ### Self-host free surface
@@ -108,6 +118,23 @@ Demo story (smoke): **allow → deny secret → approve push → kill switch →
 
 ## Quickstart
 
+### Fastest portable test
+
+**Requirements:** Node.js 22+ and Git. Docker is not required.
+
+```bash
+git clone https://github.com/kotobuki09/actantos-releases.git
+cd actantos-releases/actantosd
+npm run quickstart
+```
+
+This one command installs dependencies, builds ActantOS, starts an isolated
+in-memory server, runs the complete simulated-agent allow/deny/approval/audit
+test, and shuts the server down. It works from PowerShell, Command Prompt, and
+Unix-like shells. A successful run ends with `0 failed`.
+
+### Persistent self-host setup
+
 **Requirements:** Docker Desktop, Node.js 22+, Git.
 
 ```bash
@@ -122,7 +149,7 @@ cd actantosd && npm install
 npm run demo -- --url http://localhost:3100
 ```
 
-Or download **`actantosd-1.0.0.tgz`** from the [v1.0.0 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0).
+Or download **`actantosd-1.0.1.tgz`** from the [v1.0.1 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1).
 
 Daemon default port: **3100** (so it does not collide with a site on 3000).
 
@@ -168,7 +195,7 @@ Setup: [`actantosd/docs/mcp-gateway-stable.md`](actantosd/docs/mcp-gateway-stabl
 
 | Doc | Purpose |
 | --- | --- |
-| [v1.0.0 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0) | Public artifacts & notes |
+| [v1.0.1 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1) | Latest public artifacts & notes |
 | [Website /v1](https://actantos.io/v1) | Release story |
 | [API v1 contract](actantosd/docs/api-v1-contract.md) | Stable endpoints |
 | [Open-core surface](actantosd/docs/open-core-surface.md) | Free vs paid boundary |
@@ -178,7 +205,7 @@ Setup: [`actantosd/docs/mcp-gateway-stable.md`](actantosd/docs/mcp-gateway-stabl
 | [Security hardening](actantosd/docs/security-hardening.md) | Sandbox & fail-closed |
 | [Support runbook](actantosd/docs/support-runbook.md) | Ops recovery |
 | [Upgrade v0.7 → v1](actantosd/docs/upgrade-v0.7-to-v1.md) | Migration |
-| [Release notes v1.0.0](actantosd/docs/release-notes-v1.0.0.md) | Changelog for this tag |
+| [Release notes v1.0.1](actantosd/docs/release-notes-v1.0.1.md) | Changelog for the latest tag |
 
 ---
 

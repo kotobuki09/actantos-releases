@@ -30,6 +30,21 @@ decision: allow | deny | approval_required
 
 ## 5-Step Setup
 
+### One-command portable agent test
+
+On Windows, macOS, or Linux with Node.js 22+:
+
+```bash
+npm run quickstart
+```
+
+The command installs dependencies (`npm ci` in a Git clone, `npm install` in a
+packed release), builds the service when source is present, or uses the shipped
+compiled service from a release tarball,
+starts it in memory on `127.0.0.1:4310`, runs the full simulated-agent demo,
+and stops it. Docker and Postgres are not required. Set
+`ACTANTOS_QUICKSTART_PORT` if port 4310 is already occupied.
+
 ### 1. Install Node.js 22+
 ```bash
 node --version  # must be 22+
