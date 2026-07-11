@@ -16,6 +16,9 @@ test("tenant context is transaction-local and parameterized", async () => {
     async query(): Promise<readonly Record<string, unknown>[]> {
       return []
     },
+    async close(): Promise<void> {
+      return
+    },
     async transaction<T>(callback: (client: { query(sql: string, params?: readonly unknown[]): Promise<readonly Record<string, unknown>[]> }) => Promise<T>): Promise<T> {
       return callback({
         async query(sql, params = []) {
