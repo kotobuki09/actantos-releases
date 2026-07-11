@@ -165,26 +165,31 @@ test("GET /v1/metrics/usage returns pilot usage totals for a tenant", async () =
   })
 
   assert.equal(response.statusCode, 200)
-  assert.deepEqual(response.json(), {
-    tenant_id: "t_demo",
-    summary: {
-      session_count: 1,
-      decision_count: 2,
-      allow_count: 1,
-      deny_count: 0,
-      approval_required_count: 1,
-      approval_count: 1,
-      executed_tool_result_count: 1,
-      failed_tool_result_count: 0,
-      timeout_tool_result_count: 0,
-      blocked_tool_result_count: 0,
-      active_kill_switch_count: 0,
-    },
-    tool_kinds: [
-      { tool_kind: "file", count: 1 },
-      { tool_kind: "shell", count: 1 },
-    ],
+  const body = response.json()
+  assert.equal(body.tenant_id, "t_demo")
+  assert.deepEqual(body.summary, {
+    session_count: 1,
+    decision_count: 2,
+    allow_count: 1,
+    deny_count: 0,
+    approval_required_count: 1,
+    approval_count: 1,
+    executed_tool_result_count: 1,
+    failed_tool_result_count: 0,
+    timeout_tool_result_count: 0,
+    blocked_tool_result_count: 0,
+    active_kill_switch_count: 0,
   })
+  assert.equal(body.ops_home.allow_rate, 0.5)
+  assert.equal(body.ops_home.deny_rate, 0)
+  assert.equal(body.ops_home.approval_required_rate, 0.5)
+  assert.equal(body.ops_home.kill_switch_armed, false)
+  assert.equal(typeof body.ops_home.budget_remaining, "number")
+  assert.equal(typeof body.ops_home.budget_limit, "number")
+  assert.deepEqual(body.tool_kinds, [
+    { tool_kind: "file", count: 1 },
+    { tool_kind: "shell", count: 1 },
+  ])
 
   await server.close()
   await database.close()

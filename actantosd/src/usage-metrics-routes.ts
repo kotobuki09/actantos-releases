@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify"
 import { z, ZodError } from "zod"
 
 import type { Database } from "./database.ts"
+import { buildOpsHomeSummary } from "./ops-metrics.ts"
 
 const usageMetricsQuerySchema = z.object({
   tenant_id: z.string().min(1),
@@ -47,6 +48,19 @@ export const listUsageMetrics = async (
     readonly timeout_tool_result_count: number
     readonly blocked_tool_result_count: number
     readonly active_kill_switch_count: number
+  }
+  readonly ops_home: {
+    readonly allow_rate: number
+    readonly deny_rate: number
+    readonly approval_required_rate: number
+    readonly decision_count: number
+    readonly allow_count: number
+    readonly deny_count: number
+    readonly approval_required_count: number
+    readonly active_kill_switch_count: number
+    readonly kill_switch_armed: boolean
+    readonly budget_remaining: number
+    readonly budget_limit: number
   }
   readonly tool_kinds: readonly {
     readonly tool_kind: string
@@ -122,20 +136,47 @@ export const listUsageMetrics = async (
     ),
   ])
 
+  const summary = {
+    session_count: sessionCount,
+    decision_count: decisionCount,
+    allow_count: allowCount,
+    deny_count: denyCount,
+    approval_required_count: approvalRequiredCount,
+    approval_count: approvalCount,
+    executed_tool_result_count: executedToolResultCount,
+    failed_tool_result_count: failedToolResultCount,
+    timeout_tool_result_count: timeoutToolResultCount,
+    blocked_tool_result_count: blockedToolResultCount,
+    active_kill_switch_count: activeKillSwitchCount,
+  }
+
+  const budgetRows = await database.query<{ remaining: string | number; limit_value: string | number }>(
+    `
+      SELECT
+        COALESCE(SUM(GREATEST(limit_value - current_value, 0)), 0) AS remaining,
+        COALESCE(SUM(limit_value), 0) AS limit_value
+      FROM budgets
+      WHERE tenant_id = $1
+    `,
+    [tenantId],
+  )
+
+  const budgetRemaining = Number(budgetRows[0]?.remaining ?? 0)
+  const budgetLimit = Number(budgetRows[0]?.limit_value ?? 0)
+
   return {
     tenant_id: tenantId,
-    summary: {
-      session_count: sessionCount,
-      decision_count: decisionCount,
-      allow_count: allowCount,
-      deny_count: denyCount,
-      approval_required_count: approvalRequiredCount,
-      approval_count: approvalCount,
-      executed_tool_result_count: executedToolResultCount,
-      failed_tool_result_count: failedToolResultCount,
-      timeout_tool_result_count: timeoutToolResultCount,
-      blocked_tool_result_count: blockedToolResultCount,
-      active_kill_switch_count: activeKillSwitchCount,
+    summary,
+    ops_home: {
+      ...buildOpsHomeSummary({
+        decision_count: decisionCount,
+        allow_count: allowCount,
+        deny_count: denyCount,
+        approval_required_count: approvalRequiredCount,
+        active_kill_switch_count: activeKillSwitchCount,
+      }),
+      budget_remaining: budgetRemaining,
+      budget_limit: budgetLimit,
     },
     tool_kinds: toolKinds.map((row) => ({
       tool_kind: row.tool_kind,

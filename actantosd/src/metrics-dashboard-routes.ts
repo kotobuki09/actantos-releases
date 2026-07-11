@@ -70,6 +70,12 @@ export const registerMetricsDashboardRoutes = (
         <article class="card"><div class="label">Denies</div><div class="value">${String(metrics.summary.deny_count)}</div></article>
         <article class="card"><div class="label">Approvals required</div><div class="value">${String(metrics.summary.approval_required_count)}</div></article>
         <article class="card"><div class="label">Executed results</div><div class="value">${String(metrics.summary.executed_tool_result_count)}</div></article>
+        <article class="card"><div class="label">Allow rate</div><div class="value">${(metrics.ops_home.allow_rate * 100).toFixed(0)}%</div></article>
+        <article class="card"><div class="label">Deny rate</div><div class="value">${(metrics.ops_home.deny_rate * 100).toFixed(0)}%</div></article>
+        <article class="card"><div class="label">Approval rate</div><div class="value">${(metrics.ops_home.approval_required_rate * 100).toFixed(0)}%</div></article>
+        <article class="card"><div class="label">Kill switch</div><div class="value">${metrics.ops_home.kill_switch_armed ? "ARMED" : "clear"}</div></article>
+        <article class="card"><div class="label">Budget remaining</div><div class="value">${String(metrics.ops_home.budget_remaining)}</div></article>
+        <article class="card"><div class="label">Budget limit</div><div class="value">${String(metrics.ops_home.budget_limit)}</div></article>
       </section>
       <section class="panel">
         <h2>Tool mix</h2>

@@ -36,6 +36,8 @@ import type { Database } from "./database.ts"
 import { registerMcpGateway } from "./mcp-gateway.ts"
 import { registerMetricsDashboardRoutes } from "./metrics-dashboard-routes.ts"
 import { registerWebhookRoutes } from "./webhook-routes.ts"
+import { registerApprovalChannelRoutes } from "./approval-channels-routes.ts"
+import { verifyOidcBearerToken, type OidcConfig } from "./oidc-auth.ts"
 
 type BuildServerOptions = {
   readonly apiKey?: string
@@ -45,6 +47,7 @@ type BuildServerOptions = {
   readonly policyValidator?: CedarPolicyValidator
   readonly riskEngine?: RiskEngine
   readonly database?: Database
+  readonly oidc?: OidcConfig
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +78,7 @@ const toolResultBodySchema = z.object({
 export const buildServer = (options: BuildServerOptions = {}) => {
   const server = Fastify({ logger: true })
   const apiKey = options.apiKey
+  const oidc = options.oidc
   const repository = options.repository ?? new InMemoryToolCallRepository()
   const cedarProvider = options.cedarProvider ?? createConfiguredCedarProvider()
   const policyValidator = options.policyValidator ?? createConfiguredCedarPolicyValidator()
@@ -98,19 +102,20 @@ export const buildServer = (options: BuildServerOptions = {}) => {
         }),
   })
 
+  const isPublicRuntimePath = (pathname: string): boolean =>
+    pathname === "/health/live" ||
+    pathname === "/health/ready" ||
+    pathname === "/v1/intercept/tool-call" ||
+    pathname === "/v1/tool-result" ||
+    pathname === "/v1/mcp/sse" ||
+    pathname === "/v1/mcp/message"
+
   if (apiKey !== undefined) {
     server.addHook("onRequest", async (request, reply) => {
       const requestUrl = new URL(request.raw.url ?? request.url, "http://localhost")
       const pathname = requestUrl.pathname
 
-      if (
-        pathname === "/health/live" ||
-        pathname === "/health/ready" ||
-        pathname === "/v1/intercept/tool-call" ||
-        pathname === "/v1/tool-result" ||
-        pathname === "/v1/mcp/sse" ||
-        pathname === "/v1/mcp/message"
-      ) {
+      if (isPublicRuntimePath(pathname)) {
         return
       }
 
@@ -130,15 +135,48 @@ export const buildServer = (options: BuildServerOptions = {}) => {
     })
   }
 
+  if (oidc !== undefined) {
+    server.addHook("onRequest", async (request, reply) => {
+      const requestUrl = new URL(request.raw.url ?? request.url, "http://localhost")
+      const pathname = requestUrl.pathname
+      if (isPublicRuntimePath(pathname)) {
+        return
+      }
+
+      const principal = verifyOidcBearerToken(
+        typeof request.headers.authorization === "string" ? request.headers.authorization : undefined,
+        oidc,
+      )
+      if (principal === null) {
+        return reply.code(401).send({
+          error: "unauthorized",
+          message: "valid OIDC bearer token required",
+        })
+      }
+      ;(request as { actantosPrincipal?: { sub: string } }).actantosPrincipal = {
+        sub: principal.sub,
+      }
+    })
+  }
+
   server.get("/health/live", async (_request, reply) =>
     reply.code(200).send({ status: "ok" }),
   )
 
   server.get("/health/ready", async (_request, reply) => {
+    const stage2 = {
+      ops_metrics: true,
+      policy_bundle_test: true,
+      approval_channels: true,
+      oidc_configured: oidc !== undefined,
+      hosted_path: "docker-compose",
+    }
+
     if (database === undefined) {
       return reply.code(200).send({
         status: "ready",
         database: "not_configured",
+        stage2,
       })
     }
 
@@ -147,12 +185,14 @@ export const buildServer = (options: BuildServerOptions = {}) => {
       return reply.code(200).send({
         status: "ready",
         database: "connected",
+        stage2,
       })
     } catch (error) {
       server.log.warn(error, "Readiness database probe failed")
       return reply.code(503).send({
         status: "not_ready",
         database: "unreachable",
+        stage2,
       })
     }
   })
@@ -161,6 +201,7 @@ export const buildServer = (options: BuildServerOptions = {}) => {
   registerMcpGateway(server, service)
   registerAgentsRoutes(server, { ...(database === undefined ? {} : { database }) })
   registerApprovalRoutes(server, { repository, ...(database === undefined ? {} : { database }) })
+  registerApprovalChannelRoutes(server, { repository, ...(database === undefined ? {} : { database }) })
   registerDashboardRoutes(server, { ...(database === undefined ? {} : { database }) })
   registerDecisionsRoutes(server, { ...(database === undefined ? {} : { database }) })
   registerEvidenceExportRoutes(server, { ...(database === undefined ? {} : { database }) })

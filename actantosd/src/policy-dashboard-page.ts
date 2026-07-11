@@ -161,6 +161,21 @@ when {
     <section class="panel">
       <div class="panel-header">
         <div>
+          <h2>Risk rules</h2>
+          <p>Read and update tenant risk rules used for approval escalation. Backed by <code>GET/PUT /v1/risk-rules</code>.</p>
+        </div>
+        <div class="secondary">Stage 2 policy ops</div>
+      </div>
+      <div class="form-actions">
+        <button class="action-button" type="button" data-risk-rules-load="true">Load risk rules</button>
+        <button class="action-button" type="button" data-risk-rules-save="true">Save risk rules</button>
+        <span class="feedback" data-risk-rules-feedback="true" data-state="idle">Load rules to review, edit JSON, then save.</span>
+      </div>
+      <textarea id="risk-rules-json" data-risk-rules-json="true" spellcheck="false">{}</textarea>
+    </section>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
           <h2>Dry-run against a stored bundle</h2>
           <p>Evaluate a candidate tool call with <code>dry_run=true</code> against a stored bundle without activating it.</p>
         </div>
@@ -289,6 +304,55 @@ when {
         } catch {
           setFeedback("error", "Upload failed. Retry when the dashboard can reach the API.");
           submitButton.disabled = false;
+        }
+      });
+      const riskFeedback = document.querySelector("[data-risk-rules-feedback='true']");
+      const riskJson = document.querySelector("[data-risk-rules-json='true']");
+      const setRiskFeedback = (state, message) => {
+        if (!(riskFeedback instanceof HTMLElement)) return;
+        riskFeedback.dataset.state = state;
+        riskFeedback.textContent = message;
+      };
+      document.querySelector("[data-risk-rules-load='true']")?.addEventListener("click", async () => {
+        setRiskFeedback("pending", "Loading risk rules...");
+        try {
+          const response = await fetch(appendApiKey("/v1/risk-rules?tenant_id=" + encodeURIComponent(tenantId)));
+          const body = await response.json();
+          if (!response.ok) {
+            setRiskFeedback("error", "Failed to load risk rules.");
+            return;
+          }
+          if (riskJson instanceof HTMLTextAreaElement) {
+            riskJson.value = JSON.stringify(body.risk_rule_set?.rules ?? body, null, 2);
+          }
+          setRiskFeedback("success", "Loaded from " + String(body.risk_rule_set?.source ?? "api") + ".");
+        } catch {
+          setRiskFeedback("error", "Failed to load risk rules.");
+        }
+      });
+      document.querySelector("[data-risk-rules-save='true']")?.addEventListener("click", async () => {
+        if (!(riskJson instanceof HTMLTextAreaElement)) return;
+        setRiskFeedback("pending", "Saving risk rules...");
+        let rules;
+        try {
+          rules = JSON.parse(riskJson.value);
+        } catch {
+          setRiskFeedback("error", "Risk rules JSON is invalid.");
+          return;
+        }
+        try {
+          const response = await fetch(appendApiKey("/v1/risk-rules"), {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ tenant_id: tenantId, rules }),
+          });
+          if (!response.ok) {
+            setRiskFeedback("error", "Save failed. Check schema and retry.");
+            return;
+          }
+          setRiskFeedback("success", "Risk rules saved for tenant.");
+        } catch {
+          setRiskFeedback("error", "Save failed.");
         }
       });
       const testForm = document.querySelector("[data-policy-test-form='true']");

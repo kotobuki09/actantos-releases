@@ -1,4 +1,5 @@
 import { createDatabase } from "./database.ts"
+import { loadOidcConfigFromEnv } from "./oidc-auth.ts"
 import { buildServer } from "./server.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
 
@@ -8,6 +9,7 @@ const databaseUrl = process.env["DATABASE_URL"]
 const rawApiKey = process.env["ACTANTOS_API_KEY"]?.trim()
 const apiKey = rawApiKey !== undefined && rawApiKey.length > 0 ? rawApiKey : undefined
 const hmacSecret = process.env["HMAC_SECRET"]
+const oidc = loadOidcConfigFromEnv()
 
 const bootstrap = async (): Promise<void> => {
   if (databaseUrl !== undefined) {
@@ -16,21 +18,23 @@ const bootstrap = async (): Promise<void> => {
     const server = buildServer({
       ...(apiKey === undefined ? {} : { apiKey }),
       ...(hmacSecret === undefined ? {} : { hmacSecret }),
+      ...(oidc === undefined ? {} : { oidc }),
       repository: new PostgresToolCallRepository(database),
       database,
     })
 
     await server.listen({ port, host })
-    server.log.info({ host, port }, "actantosd listening")
+    server.log.info({ host, port, oidc: oidc !== undefined }, "actantosd listening")
     return
   }
 
   const server = buildServer({
     ...(apiKey === undefined ? {} : { apiKey }),
     ...(hmacSecret === undefined ? {} : { hmacSecret }),
+    ...(oidc === undefined ? {} : { oidc }),
   })
   await server.listen({ port, host })
-  server.log.info({ host, port }, "actantosd listening")
+  server.log.info({ host, port, oidc: oidc !== undefined }, "actantosd listening")
 }
 
 bootstrap()
