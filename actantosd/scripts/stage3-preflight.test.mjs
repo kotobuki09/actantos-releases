@@ -69,7 +69,48 @@ test("Given misleading command output When marker is absent Then dependency is m
     runner: async (probe) => ({ exitCode: 0, stdout: probe.id === "postgres" ? "success" : probe.successMarker, stderr: "", timedOut: false }),
   });
   assert.equal(result.exitCode, 1);
-  assert.match(result.output, /postgres: MISCONFIGURED \(success marker missing\)/);
+  assert.match(result.output, /postgres: MISCONFIGURED \(success marker mismatch\)/);
+});
+
+for (const [position, output] of [
+  ["prefix", "prefix ACTANTOS_POSTGRES_READY"],
+  ["suffix", "ACTANTOS_POSTGRES_READY suffix"],
+  ["embedded", "prefix ACTANTOS_POSTGRES_READY suffix"],
+]) {
+  test(`Given a ${position} marker When the probe exits zero Then dependency is misconfigured`, async () => {
+    const result = await runPreflight({
+      mode: "required",
+      env: {
+        DATABASE_URL: "postgres://actantos:test@127.0.0.1:5432/actantos_test",
+        AWS_REGION: "us-east-1",
+        STAGE3_AWS_ACCOUNT_ID: "123456789012",
+        STAGE3_S3_BUCKET: "locked-evidence",
+        STAGE3_SPLUNK_HEC_URL: "https://splunk.example.test:8088",
+        STAGE3_WEBHOOK_URL: "https://hooks.example.test/audit",
+        STAGE3_WEBHOOK_READY_MARKER: "ACTANTOS_WEBHOOK_READY",
+      },
+      runner: async (probe) => ({ exitCode: 0, stdout: probe.id === "postgres" ? output : probe.successMarker, stderr: "", timedOut: false }),
+    });
+    assert.equal(result.exitCode, 1);
+    assert.match(result.output, /postgres: MISCONFIGURED \(success marker mismatch\)/);
+  });
+}
+
+test("Given surrounding whitespace When output otherwise equals marker Then dependency is ready", async () => {
+  const result = await runPreflight({
+    mode: "required",
+    env: {
+      DATABASE_URL: "postgres://actantos:test@127.0.0.1:5432/actantos_test",
+      AWS_REGION: "us-east-1",
+      STAGE3_AWS_ACCOUNT_ID: "123456789012",
+      STAGE3_S3_BUCKET: "locked-evidence",
+      STAGE3_SPLUNK_HEC_URL: "https://splunk.example.test:8088",
+      STAGE3_WEBHOOK_URL: "https://hooks.example.test/audit",
+      STAGE3_WEBHOOK_READY_MARKER: "ACTANTOS_WEBHOOK_READY",
+    },
+    runner: async (probe) => ({ exitCode: 0, stdout: ` \r\n${probe.successMarker}\n `, stderr: "", timedOut: false }),
+  });
+  assert.equal(result.exitCode, 0);
 });
 
 test("Given a hung command When its timeout expires Then dependency is unavailable", async () => {

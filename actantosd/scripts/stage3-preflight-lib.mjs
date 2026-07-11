@@ -69,9 +69,9 @@ export const runPreflight = async ({ mode, env, runner = runCommand }) => {
     } else if (result.exitCode !== 0) {
       ready = false;
       lines.push(`${probe.id}: UNAVAILABLE (${result.stderr.trim() || `exit ${result.exitCode}`})`);
-    } else if (!probe.successMarker || !result.stdout.includes(probe.successMarker)) {
+    } else if (!probe.successMarker || result.stdout.trim() !== probe.successMarker) {
       ready = false;
-      lines.push(`${probe.id}: MISCONFIGURED (success marker missing)`);
+      lines.push(`${probe.id}: MISCONFIGURED (success marker mismatch)`);
     } else {
       lines.push(`${probe.id}: READY`);
     }
