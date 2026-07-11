@@ -20,6 +20,9 @@
     "demo": "tsx demo.ts",
     "quickstart": "node scripts/quickstart.mjs",
     "smoke:fresh-install": "node scripts/fresh-install-smoke.mjs",
+    "stage3:preflight": "node scripts/stage3-preflight.mjs --mode=offline",
+    "stage3:preflight:optional": "node scripts/stage3-preflight.mjs --mode=optional",
+    "stage3:preflight:required": "node scripts/stage3-preflight.mjs --mode=required",
     "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression",
     "release:artifacts": "node scripts/build-release-artifacts.mjs",
     "stage3:validate": "node scripts/validate-stage3-ledger.mjs stage3-capabilities.json"
