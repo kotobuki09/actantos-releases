@@ -8,7 +8,7 @@ import { listSessionEvents } from "./session-events.ts"
 import { listSessions } from "./sessions-routes.ts"
 
 const evidenceExportQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
   session_id: z.string().min(1).optional(),
 })
 

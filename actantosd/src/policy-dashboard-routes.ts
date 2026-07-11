@@ -5,7 +5,7 @@ import type { Database } from "./database.ts"
 import { renderPolicyDashboardPage, type PolicyBundleRow } from "./policy-dashboard-page.ts"
 
 const policyDashboardQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
   api_key: z.string().min(1).optional(),
 })
 

@@ -14,7 +14,7 @@ const approveDecideBodySchema = z.object({
 })
 
 const pendingApprovalsQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
 })
 
 type PendingApprovalRow = {

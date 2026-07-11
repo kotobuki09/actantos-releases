@@ -4,7 +4,7 @@ import test from "node:test"
 import { newDb } from "pg-mem"
 
 import type { ToolCallInterceptionRequest } from "./contracts.ts"
-import { migrateDatabase, seedDemoData, type Database } from "./database.ts"
+import { migrateDatabaseForUnitTests, seedDemoData, type Database } from "./database.ts"
 import { createInterceptService } from "./intercept-service.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
 
@@ -88,7 +88,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabase(database)
+  await migrateDatabaseForUnitTests(database)
   await seedDemoData(database)
 
   return database

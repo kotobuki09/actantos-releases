@@ -6,10 +6,10 @@
 
 | | |
 | --- | --- |
-| **Latest public release** | **[v1.0.1 Portable Agent Test](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1)** (2026-07-11) |
-| **Website** | [actantos.io/v1](https://actantos.io/v1) |
-| **Stage** | Stage 1 done · Stage 2 done |
-| **What this means** | Self-host Enforcement Kernel + control-plane ops shipped (filters, metrics, policy dry-run, webhook channels, optional OIDC, Compose hosted path). |
+| **Latest public release** | **[v1.1.0 Stage 3 Governed Enterprise Autonomy](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.1.0)** (2026-07-11) |
+| **Website** | [actantos.com](https://actantos.com) · [roadmap](https://actantos.com/roadmap) · [v1](https://actantos.com/v1) |
+| **Stage** | Stage 1 done · Stage 2 done · **Stage 3 done** |
+| **What this means** | Self-host Enforcement Kernel + control-plane ops + Stage 3 contracts (tenancy, gVisor isolation, STS broker, Object Lock evidence, SIEM outbox). Memory vault and full managed multi-tenant SaaS packaging remain future. |
 | **Ship rule** | Built + tests pass = done (no partner gate). |
 
 This repository is the **public release surface** (artifacts, notes, installable tree).
@@ -63,6 +63,17 @@ Your AI agent (Cursor, Claude, GPT, custom…)
 
 ---
 
+## What’s in v1.1.0 (Stage 3)
+
+- Multi-tenant foundation (required tenants, OIDC/service principals, RBAC, RLS)
+- Signed isolation contract + fail-closed gVisor/runsc provider
+- Short-lived AWS STS credential broker
+- Signed WORM-style evidence archives (Object Lock COMPLIANCE model)
+- Durable SIEM webhook + Splunk HEC connectors
+- Stage 3 capability ledger (`npm run stage3:validate`)
+
+The frozen `/v1` intercept API remains compatible. See `actantosd/docs/release-notes-v1.1.0.md`.
+
 ## What’s in v1.0.1
 
 - One-command portable install and agent test with `npm run quickstart`
@@ -70,8 +81,6 @@ Your AI agent (Cursor, Claude, GPT, custom…)
 - No Docker or Postgres required for the first test
 - Verified allow, deny, approval-required, and audit-evidence decisions
 - Clean server shutdown, including native Windows process ownership
-
-The frozen `/v1` API and the v1.0.0 enforcement behavior are unchanged.
 
 ## What’s in v1.0.0 (Quiet Open-Core)
 

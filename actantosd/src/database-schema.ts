@@ -14,6 +14,34 @@ export interface UsersTable {
   readonly created_at: Date | string
 }
 
+export interface IdentitySubjectsTable {
+  readonly id: string
+  readonly issuer: string
+  readonly subject: string
+  readonly display_name: string
+  readonly status: "active" | "disabled"
+  readonly created_at: Date | string
+}
+
+export interface TenantMembershipsTable {
+  readonly tenant_id: string
+  readonly subject_id: string
+  readonly role: "viewer" | "operator" | "admin"
+  readonly status: "active" | "disabled"
+  readonly created_at: Date | string
+}
+
+export interface ServicePrincipalsTable {
+  readonly id: string
+  readonly tenant_id: string
+  readonly name: string
+  readonly key_hash: string
+  /** JSON-encoded string array (pg-mem friendly; real Postgres may still store text). */
+  readonly scopes_json: string
+  readonly status: "active" | "disabled"
+  readonly created_at: Date | string
+}
+
 export interface AgentsTable {
   readonly id: string
   readonly external_id: string
@@ -177,11 +205,14 @@ export interface ActantDatabaseSchema {
   readonly audit_events: AuditEventsTable
   readonly budgets: BudgetsTable
   readonly kill_switches: KillSwitchesTable
+  readonly identity_subjects: IdentitySubjectsTable
   readonly policy_bundles: PolicyBundlesTable
   readonly policy_decisions: PolicyDecisionsTable
   readonly rate_limits: RateLimitsTable
   readonly risk_rule_sets: RiskRuleSetsTable
   readonly sessions: SessionsTable
+  readonly service_principals: ServicePrincipalsTable
+  readonly tenant_memberships: TenantMembershipsTable
   readonly tenants: TenantsTable
   readonly tool_calls: ToolCallsTable
   readonly users: UsersTable

@@ -1,7 +1,7 @@
 import { newDb } from "pg-mem"
 
 import type { Database } from "./database.ts"
-import { migrateDatabase, seedDemoData } from "./database.ts"
+import { migrateDatabaseForUnitTests, seedDemoData } from "./database.ts"
 
 export const createTestDatabase = async (): Promise<Database> => {
   const memoryDb = newDb()
@@ -39,7 +39,7 @@ export const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabase(database)
+  await migrateDatabaseForUnitTests(database)
   await seedDemoData(database)
 
   return database

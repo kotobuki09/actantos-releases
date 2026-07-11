@@ -4,7 +4,7 @@ import { z, ZodError } from "zod"
 import type { Database } from "./database.ts"
 
 const pendingToolVersionsQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
 })
 
 type PendingToolVersionRow = {

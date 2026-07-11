@@ -1,12 +1,12 @@
 {
   "name": "actantosd",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "ActantOS enforcement kernel prototype",
+  "description": "ActantOS enforcement kernel and governed enterprise autonomy control plane",
   "actantos": {
-    "stage": "quiet-open-core",
-    "releaseNotesFile": "docs/release-notes-v1.0.1.md"
+    "stage": "stage3-governed-enterprise-autonomy",
+    "releaseNotesFile": "docs/release-notes-v1.1.0.md"
   },
   "scripts": {
     "dev": "node --experimental-strip-types --watch src/index.ts",
@@ -20,8 +20,12 @@
     "demo": "tsx demo.ts",
     "quickstart": "node scripts/quickstart.mjs",
     "smoke:fresh-install": "node scripts/fresh-install-smoke.mjs",
+    "stage3:preflight": "node scripts/stage3-preflight.mjs --mode=offline",
+    "stage3:preflight:optional": "node scripts/stage3-preflight.mjs --mode=optional",
+    "stage3:preflight:required": "node scripts/stage3-preflight.mjs --mode=required",
     "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression",
-    "release:artifacts": "node scripts/build-release-artifacts.mjs"
+    "release:artifacts": "node scripts/build-release-artifacts.mjs",
+    "stage3:validate": "node scripts/validate-stage3-ledger.mjs stage3-capabilities.json"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

@@ -6,11 +6,11 @@ import { z, ZodError } from "zod"
 import type { Database } from "./database.ts"
 
 const rateLimitsQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
 })
 
 const rateLimitBodySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
   scope_type: z.enum(["tenant", "agent", "session", "tool"]),
   scope_id: z.string().min(1),
   action_key: z.string().min(1),

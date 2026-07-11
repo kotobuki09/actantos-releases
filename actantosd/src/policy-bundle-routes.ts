@@ -12,11 +12,11 @@ import { runPolicyBundleDryRun } from "./policy-bundle-test.ts"
 import { registerPolicyDashboardRoutes } from "./policy-dashboard-routes.ts"
 
 const policyBundlesQuerySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
 })
 
 const createPolicyBundleBodySchema = z.object({
-  tenant_id: z.string().min(1).optional().default("t_demo"),
+  tenant_id: z.string().min(1),
   version: z.string().min(1),
   engine: z.literal("cedar").optional().default("cedar"),
   source_text: z.string().min(1),

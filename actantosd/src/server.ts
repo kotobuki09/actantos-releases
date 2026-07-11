@@ -37,7 +37,14 @@ import { registerMcpGateway } from "./mcp-gateway.ts"
 import { registerMetricsDashboardRoutes } from "./metrics-dashboard-routes.ts"
 import { registerWebhookRoutes } from "./webhook-routes.ts"
 import { registerApprovalChannelRoutes } from "./approval-channels-routes.ts"
-import { verifyOidcBearerToken, type OidcConfig } from "./oidc-auth.ts"
+import { verifyOidcBearerToken, type AuthenticatedPrincipal, type OidcConfig } from "./oidc-auth.ts"
+import { verifyServicePrincipal, type ServicePrincipalResolver } from "./service-principal-auth.ts"
+
+declare module "fastify" {
+  interface FastifyRequest {
+    actantosPrincipal?: AuthenticatedPrincipal
+  }
+}
 
 type BuildServerOptions = {
   readonly apiKey?: string
@@ -48,6 +55,8 @@ type BuildServerOptions = {
   readonly riskEngine?: RiskEngine
   readonly database?: Database
   readonly oidc?: OidcConfig
+  readonly servicePrincipals?: ServicePrincipalResolver
+  readonly hardenedAuth?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +88,8 @@ export const buildServer = (options: BuildServerOptions = {}) => {
   const server = Fastify({ logger: true })
   const apiKey = options.apiKey
   const oidc = options.oidc
+  const servicePrincipals = options.servicePrincipals
+  const hardenedAuth = options.hardenedAuth ?? false
   const repository = options.repository ?? new InMemoryToolCallRepository()
   const cedarProvider = options.cedarProvider ?? createConfiguredCedarProvider()
   const policyValidator = options.policyValidator ?? createConfiguredCedarPolicyValidator()
@@ -120,9 +131,8 @@ export const buildServer = (options: BuildServerOptions = {}) => {
       }
 
       const headerApiKey = request.headers["x-actantos-api-key"]
-      const providedApiKey = typeof headerApiKey === "string"
-        ? headerApiKey
-        : requestUrl.searchParams.get("api_key")
+      const providedApiKey = typeof headerApiKey === "string" ? headerApiKey
+        : hardenedAuth ? undefined : requestUrl.searchParams.get("api_key") ?? undefined
 
       if (providedApiKey === apiKey) {
         return
@@ -135,27 +145,50 @@ export const buildServer = (options: BuildServerOptions = {}) => {
     })
   }
 
-  if (oidc !== undefined) {
+  if (oidc !== undefined || servicePrincipals !== undefined) {
     server.addHook("onRequest", async (request, reply) => {
       const requestUrl = new URL(request.raw.url ?? request.url, "http://localhost")
       const pathname = requestUrl.pathname
+      // Keep Stage 1 kernel intercept paths open; OIDC/service principal covers operator surfaces.
       if (isPublicRuntimePath(pathname)) {
         return
       }
-
-      const principal = verifyOidcBearerToken(
-        typeof request.headers.authorization === "string" ? request.headers.authorization : undefined,
-        oidc,
-      )
+      const authorization = typeof request.headers.authorization === "string"
+        ? request.headers.authorization
+        : undefined
+      const headerTenant = request.headers["x-actantos-tenant"]
+      const queryTenant = requestUrl.searchParams.get("tenant_id") ?? undefined
+      const requestedTenant = typeof headerTenant === "string" ? headerTenant : queryTenant
+      const principal = authorization?.startsWith("Service ") && servicePrincipals !== undefined
+        ? await verifyServicePrincipal(authorization, servicePrincipals)
+        : oidc === undefined
+          ? null
+          : await verifyOidcBearerToken(authorization, requestedTenant, oidc)
       if (principal === null) {
         return reply.code(401).send({
           error: "unauthorized",
-          message: "valid OIDC bearer token required",
+          message: "valid OIDC bearer token or service principal required",
         })
       }
-      ;(request as { actantosPrincipal?: { sub: string } }).actantosPrincipal = {
-        sub: principal.sub,
+      if (requestedTenant !== undefined && requestedTenant !== principal.tenantId) {
+        return reply.code(403).send({
+          error: "tenant_forbidden",
+          message: "principal is not a member of tenant",
+        })
       }
+      const requiredRole = request.method === "DELETE"
+        ? "admin"
+        : request.method === "GET" || request.method === "HEAD"
+          ? "viewer"
+          : "operator"
+      const ranks = { viewer: 0, operator: 1, admin: 2 } as const
+      if (ranks[principal.role] < ranks[requiredRole]) {
+        return reply.code(403).send({
+          error: "insufficient_role",
+          message: `${requiredRole} role required`,
+        })
+      }
+      request.actantosPrincipal = principal
     })
   }
 
@@ -171,12 +204,22 @@ export const buildServer = (options: BuildServerOptions = {}) => {
       oidc_configured: oidc !== undefined,
       hosted_path: "docker-compose",
     }
+    const stage3 = {
+      foundation: true,
+      isolation_contract: true,
+      gvisor_provider: true,
+      credential_broker: true,
+      evidence_archive: true,
+      siem_connectors: true,
+      tenant_defaults_removed: true,
+    }
 
     if (database === undefined) {
       return reply.code(200).send({
         status: "ready",
         database: "not_configured",
         stage2,
+        stage3,
       })
     }
 
@@ -186,6 +229,7 @@ export const buildServer = (options: BuildServerOptions = {}) => {
         status: "ready",
         database: "connected",
         stage2,
+        stage3,
       })
     } catch (error) {
       server.log.warn(error, "Readiness database probe failed")
@@ -193,6 +237,7 @@ export const buildServer = (options: BuildServerOptions = {}) => {
         status: "not_ready",
         database: "unreachable",
         stage2,
+        stage3,
       })
     }
   })
