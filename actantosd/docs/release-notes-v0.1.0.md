@@ -1,9 +1,12 @@
-# v0.1.0 Release Notes
+# v0.1.0 Release Notes (superseded naming)
+
+> **Superseded for public tagging.** Use **`v1.0.0` Quiet Open-Core** (`release-notes-v1.0.0.md`).  
+> This file is retained so older artifact paths that referenced `v0.1.0` remain understandable.
 
 ## Highlights
 
 - frozen `/v1` API contract for runtime, operator, and MCP gateway integrations
-- verified upgrade path from `v0.7.0-pilot-beta` to `v0.1.0`
+- verified upgrade path from `v0.7.0-pilot-beta` to `v0.1.0` (now published as `v1.0.0`)
 - release checklist, artifact manifest, and release packaging workflow
 - expanded policy template pack to five starter templates
 - stable MCP gateway client guidance for operators

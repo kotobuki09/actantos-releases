@@ -1,6 +1,9 @@
 # MCP Gateway Stable Client Guide
 
-This document freezes the supported client-facing integration pattern for the production MCP gateway.
+**Path role:** **MCP Optional Path** — supported and stable for clients that already speak MCP.  
+**Not pilot-gating:** Design Partner Pilot success is defined on the **Pi Primary Path** (coding / guarded tools). See [pilot onboarding](./pilot-onboarding.md) and [Design Partner kit](./design-partner-kit.md).
+
+This document freezes the supported client-facing integration pattern for the MCP gateway.
 
 ## Required environment
 

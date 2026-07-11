@@ -1,12 +1,26 @@
 # actantosd — ActantOS Enforcement Kernel
 
-In-path runtime permission gateway for AI agents. Intercepts every tool call, evaluates Cedar policy + risk rules, and returns `allow | deny | approval_required` before execution happens.
+In-path runtime permission gateway for AI agents. Intercepts every tool call, evaluates Cedar policy + risk rules, and returns a **Decision** (`allow` | `deny` | `approval_required`) before execution happens.
+
+## Stage: Quiet Open-Core `v1.0.0` / Design Partner
+
+| | |
+| --- | --- |
+| **What this tag means** | Installable self-host Enforcement Kernel, frozen `/v1` API, lab-verified |
+| **What this tag does *not* mean** | Battle-tested living-customer proof (**Proven Claim Gate** is separate) |
+| **Self-Host Free Surface** | Kernel, web Approval, basic dashboard, optional Slack, templates, local evidence — see [`docs/open-core-surface.md`](docs/open-core-surface.md) |
+| **Pilot path** | **Pi Primary Path** first; **MCP Optional Path** supported — [`docs/pilot-onboarding.md`](docs/pilot-onboarding.md) |
+| **Default policy** | **Balanced Coding Policy** (Strict opt-in) — [`docs/pilot-policy-templates.md`](docs/pilot-policy-templates.md) |
+| **Design Partner kit** | Fit Checklist, Success Package, Auto-Kill — [`docs/design-partner-kit.md`](docs/design-partner-kit.md) |
+| **Pilot ops** | Living pilot chain status + runbooks — [`docs/pilot-ops-index.md`](docs/pilot-ops-index.md) |
+
+Quiet publish only — no launch campaign required. Lab `docs/pilot-evidence-*.md` packages are **fixtures**, not living partner proof.
 
 The daemon defaults to port `3100` so it does not collide with the promotion website that already uses `localhost:3000` in this workspace.
 
 The demo runner uses `tsx`, so `demo.ts` can be executed directly without a separate build step.
 
-Security planning and release evidence for the current control plane are tracked in [`docs/threat-model.md`](docs/threat-model.md), [`docs/security-hardening.md`](docs/security-hardening.md), and [`docs/security-review-checklist.md`](docs/security-review-checklist.md). The frozen production API boundary lives in [`docs/api-v1-contract.md`](docs/api-v1-contract.md). Production release docs now also include [`docs/upgrade-v0.7-to-v1.md`](docs/upgrade-v0.7-to-v1.md), [`docs/mcp-gateway-stable.md`](docs/mcp-gateway-stable.md), [`docs/release-checklist-v1.md`](docs/release-checklist-v1.md), and [`docs/release-notes-v1.0.0-production.md`](docs/release-notes-v1.0.0-production.md). Pilot rollout docs live in [`docs/pilot-onboarding.md`](docs/pilot-onboarding.md), [`docs/pilot-policy-templates.md`](docs/pilot-policy-templates.md), and [`docs/support-runbook.md`](docs/support-runbook.md).
+Security and release evidence: [`docs/threat-model.md`](docs/threat-model.md), [`docs/security-hardening.md`](docs/security-hardening.md), [`docs/security-review-checklist.md`](docs/security-review-checklist.md), [`docs/api-v1-contract.md`](docs/api-v1-contract.md), [`docs/upgrade-v0.7-to-v1.md`](docs/upgrade-v0.7-to-v1.md), [`docs/mcp-gateway-stable.md`](docs/mcp-gateway-stable.md), [`docs/release-checklist-v1.md`](docs/release-checklist-v1.md), [`docs/release-notes-v1.0.0.md`](docs/release-notes-v1.0.0.md), [`docs/go-no-go-v1.md`](docs/go-no-go-v1.md), [`docs/support-runbook.md`](docs/support-runbook.md).
 
 ## Architecture
 
@@ -374,7 +388,7 @@ Re-enable a kill switch.
 - MCP gateway clients: [`docs/mcp-gateway-stable.md`](docs/mcp-gateway-stable.md)
 - policy templates: [`docs/pilot-policy-templates.md`](docs/pilot-policy-templates.md)
 - release checklist: [`docs/release-checklist-v1.md`](docs/release-checklist-v1.md)
-- release notes: [`docs/release-notes-v1.0.0-production.md`](docs/release-notes-v1.0.0-production.md)
+- release notes: [`docs/release-notes-v1.0.0.md`](docs/release-notes-v1.0.0.md)
 
 ## Acceptance Tests
 

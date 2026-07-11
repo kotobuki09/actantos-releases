@@ -1,41 +1,26 @@
 # Production v1 Go/No-Go
 
-## Local release verdict
+> Quiet Open-Core tag vs Proven Claim Gate (ADR 0003).
 
-`Go` for the code and release package.
+## Local + public Quiet Open-Core — **Go**
 
-Verified on `2026-07-08` with:
+| Gate | Verdict |
+| --- | --- |
+| Code / package (`release:verify`) | **Go** |
+| Artifacts `v1.0.0` | **Go** |
+| Compose smoke (`smoke:fresh-install` 35/35) | **Go** (2026-07-09) |
+| Claim hygiene docs | **Go** |
+| Public tag + GitHub Release | **Go** — https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0 |
+| Sample pilot dry-run (ops process) | **Go** — [pilot-sample-dry-run-complete.md](./pilot-sample-dry-run-complete.md) |
+| Proven customer claims | **Blocked** until **living** Pilot Done (Unaided) |
 
-- `npm run release:verify`
-- `npm run smoke:fresh-install`
-- `npm run release:artifacts`
+## Proven Claim Gate (not required for v1 tag)
 
-Observed release evidence:
+- Lab fixtures and **sample** personas are **not** living proof  
+- Living Pilot #1 remains optional founder GTM — [pilot-1-status.md](./pilot-1-status.md)  
+- Clone Pilot #2 only after living unaided  
 
-- `release:verify` passed with `145` tests green, build green, and `policy:regression` green
-- `smoke:fresh-install` passed the compose-backed demo flow with `35 passed, 0 failed`
-- release artifacts were regenerated under `artifacts/`
+## Residual
 
-The repository now contains:
-
-- a frozen `/v1` contract
-- a tested `v0.7` to `v1` migration path
-- security regression evidence
-- production installation, upgrade, backup, and MCP gateway docs
-- release artifact generation and checklist documentation
-
-## External release gate still required
-
-The final public production announcement is still blocked on two external items that cannot be generated inside this workspace:
-
-- completion evidence for two real pilot workflows
-- the actual GitHub release publication step
-
-## Ship criteria for the operator
-
-Before publishing:
-
-1. confirm the pilot evidence package is attached
-2. run the release checklist in `docs/release-checklist-v1.md`
-3. publish the Git tag `v0.1.0`
-4. upload the npm tarball and release notes to the final release surface
+- Image signing deferred  
+- Living Design Partner not yet named  

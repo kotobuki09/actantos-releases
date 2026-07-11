@@ -1,8 +1,10 @@
 # Pilot Evidence — Workflow 2: MCP Tool + GitHub Automation Agent
 
+> **Classification: lab / fixture package.** MCP path is **optional** for Design Partner Pilot #1 (Pi Primary). Not sufficient for Proven Claim Gate until re-run by a living partner. See `design_partner_window_plan.md`.
+
 **Pilot partner**: Mid-size fintech company (platform team, 8 engineers)
 **Date**: 2026-07-08
-**ActantOS version**: v0.1.0
+**ActantOS version**: v0.1.0 (historical label; canonical open-core tag is `v1.0.0`)
 **Agent**: GPT-4o via custom internal MCP client
 **Workflow**: Automated data pipeline agent — reads production metrics via MCP, generates report, opens GitHub PR
 

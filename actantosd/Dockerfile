@@ -3,7 +3,8 @@ RUN cargo install cedar-policy-cli --version 4.11.2
 
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+# package-lock.json is present in git source; npm-shrinkwrap.json is present in the npm pack tarball.
+COPY package.json package-lock.json* npm-shrinkwrap.json* ./
 RUN npm ci
 
 FROM deps AS builder
@@ -16,7 +17,7 @@ RUN npm run build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* npm-shrinkwrap.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/sql ./sql

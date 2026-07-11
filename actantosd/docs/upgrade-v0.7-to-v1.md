@@ -1,6 +1,8 @@
-# Upgrade Guide: `v0.7.0-pilot-beta` to `v0.1.0`
+# Upgrade Guide: `v0.7.0-pilot-beta` to `v1.0.0`
 
-This guide defines the supported upgrade path from the pilot release to the `v0.1.0` release.
+This guide defines the supported upgrade path from the pilot-beta release to the Quiet Open-Core **`v1.0.0`** release.
+
+> Naming note: older drafts used `v0.1.0` as a package label for the same schema jump. The canonical artifact tag is **`v1.0.0`**.
 
 ## What changed
 
@@ -24,7 +26,7 @@ That source state is exercised by `src/migration-compatibility.test.ts`.
 
 1. Back up the current pilot database.
 2. Stop write traffic to `actantosd`.
-3. Deploy the `v0.1.0` image or package.
+3. Deploy the `v1.0.0` image or package.
 4. Run:
 
 ```bash
@@ -37,16 +39,4 @@ DATABASE_URL=postgres://... npm run db:migrate
 DATABASE_URL=postgres://... npm run db:seed-demo
 ```
 
-6. Verify:
-
-```bash
-curl http://localhost:3100/health/ready
-npm run policy:regression
-```
-
-## Expected post-upgrade state
-
-- `tenants` contains the existing pilot tenants
-- `users` contains backfilled owners, session users, and approval actors
-- the demo policy bundle contains the checked-in Cedar source, not the old `fake` placeholder
-- existing sessions, decisions, approvals, and audit history remain queryable through the same `/v1` surfaces
+6. Verify health and a known-good decision path (demo or pilot smoke).
