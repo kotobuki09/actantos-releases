@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "stage": "stage3-governed-enterprise-autonomy",
+  "aggregateStatus": "active",
+  "capabilities": [
+    {
+      "id": "foundation",
+      "status": "future",
+      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+    },
+    {
+      "id": "isolation",
+      "status": "future",
+      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+    },
+    {
+      "id": "credentials",
+      "status": "future",
+      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+    },
+    {
+      "id": "evidence",
+      "status": "future",
+      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+    },
+    {
+      "id": "siem",
+      "status": "future",
+      "evidence": { "tests": [], "manualQa": [], "documentation": [] }
+    }
+  ]
+}

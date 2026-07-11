@@ -21,7 +21,8 @@
     "quickstart": "node scripts/quickstart.mjs",
     "smoke:fresh-install": "node scripts/fresh-install-smoke.mjs",
     "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression",
-    "release:artifacts": "node scripts/build-release-artifacts.mjs"
+    "release:artifacts": "node scripts/build-release-artifacts.mjs",
+    "stage3:validate": "node scripts/validate-stage3-ledger.mjs stage3-capabilities.json"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
