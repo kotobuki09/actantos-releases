@@ -6,13 +6,15 @@
 
 | | |
 | --- | --- |
-| **Latest public release** | **[v1.1.0 Stage 3 Governed Enterprise Autonomy](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.1.0)** (2026-07-11) |
+| **Mode A public baseline** | **[v1.0.0 Quiet Open-Core](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0)** — claim / maturity SoT for Mode A |
+| **Engineering tree in this checkout** | Package `1.1.0` / Stage 3 code may exist here as **implemented / local** work — **not** production-qualified and **not** the Mode A marketing baseline |
 | **Website** | [actantos.com](https://actantos.com) · [roadmap](https://actantos.com/roadmap) · [v1](https://actantos.com/v1) |
-| **Stage** | Stage 1 done · Stage 2 done · **Stage 3 done** |
-| **What this means** | Self-host Enforcement Kernel + control-plane ops + Stage 3 contracts (tenancy, gVisor isolation, STS broker, Object Lock evidence, SIEM outbox). Memory vault and full managed multi-tenant SaaS packaging remain future. |
-| **Ship rule** | Built + tests pass = done (no partner gate). |
+| **What Mode A means** | Self-host Enforcement Kernel (Quiet Open-Core): fail-closed decisions, frozen `/v1`, installable open-core surface. Enterprise multi-tenant / production-qualified claims are Mode B / conditional. |
+| **Ship rule (lab)** | Built + tests pass supports *local* ship evidence; it does **not** by itself authorize production-qualified marketing claims. |
 
 This repository is the **public release surface** (artifacts, notes, installable tree).
+
+> **Mode A note:** Public claim baseline is Quiet Open-Core **v1.0.0** per plan `release-maturity-truth.json`. Stage 3 / v1.1.0 engineering in this tree is not Mode A public maturity and is not production-qualified.
 
 ---
 
