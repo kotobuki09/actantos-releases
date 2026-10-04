@@ -1,0 +1,517 @@
+{
+  "generated_at": "2026-10-04T15:24:11.273Z",
+  "commit": "5670be12a42fa4a13e281bc42ef6e7e9c9e0ebe7",
+  "environment": {
+    "node": "v26.4.0",
+    "platform": "win32",
+    "arch": "x64",
+    "hostname": "windows"
+  },
+  "schema_version": 1,
+  "product": {
+    "package_name": "actantosd",
+    "package_version": "1.1.0",
+    "maturity_label": "quiet-open-core",
+    "release_tag": "v1.1.0",
+    "validation_class": "locally-verified",
+    "active_implementation_maturity": "implemented"
+  },
+  "unit_suite": {
+    "daemon_src": 328,
+    "v2_fabric": 629,
+    "release_scripts": 46,
+    "daemon_total": 1003,
+    "runner_overcount": 4,
+    "security_bench_package": 5,
+    "per_file": {
+      "actantosd/src": {
+        "agents-routes.test.ts": 2,
+        "api-contract.test.ts": 2,
+        "approval-routes.test.ts": 3,
+        "audit-chain-verifier.test.ts": 2,
+        "budget-pipeline.test.ts": 1,
+        "budget-provider.test.ts": 6,
+        "budget-routes.test.ts": 5,
+        "cedar-fixture-parity.test.ts": 7,
+        "cedar-provider.test.ts": 24,
+        "challenger-tenant-signature.test.ts": 2,
+        "cli-emit-tetragon.test.ts": 5,
+        "cli-verify-evidence.test.ts": 8,
+        "dashboard-routes.test.ts": 13,
+        "database-admin.test.ts": 2,
+        "database.test.ts": 4,
+        "decision-command.test.ts": 8,
+        "decision-execution.test.ts": 17,
+        "decision-nonce-store.test.ts": 9,
+        "decision-token-signature.test.ts": 12,
+        "decisions-routes.test.ts": 2,
+        "docker-command-plan.test.ts": 3,
+        "docker-executor-substrate.test.ts": 26,
+        "docker-executor.test.ts": 30,
+        "evidence-export-routes.test.ts": 2,
+        "execution-routes.test.ts": 7,
+        "fail-closed.test.ts": 4,
+        "gvisor-sandbox-substrate.test.ts": 7,
+        "intercept-service.test.ts": 12,
+        "kill-switch-routes.test.ts": 1,
+        "mcp-gateway.test.ts": 10,
+        "mcp-manifest-guard.test.ts": 3,
+        "mcp-tool-version-routes.test.ts": 2,
+        "metrics-dashboard-routes.test.ts": 1,
+        "migration-compatibility.test.ts": 1,
+        "oidc-routes.test.ts": 3,
+        "policy-bundle-activation-routes.test.ts": 2,
+        "policy-bundle-hot-reload.test.ts": 1,
+        "policy-bundle-routes.test.ts": 5,
+        "policy-dashboard-routes.test.ts": 1,
+        "policy-regression.test.ts": 5,
+        "policy-test.test.ts": 4,
+        "postgres-repository.test.ts": 1,
+        "rate-limit-routes.test.ts": 3,
+        "risk-rules-routes.test.ts": 3,
+        "sandbox-runtime.test.ts": 13,
+        "server-roles.test.ts": 3,
+        "server-startup-sandbox.test.ts": 4,
+        "server.test.ts": 12,
+        "session-events.test.ts": 4,
+        "sessions-routes.test.ts": 2,
+        "sse-routes.test.ts": 2,
+        "startup-guards.test.ts": 3,
+        "tenant-context.test.ts": 2,
+        "tenant-isolation.test.ts": 4,
+        "tool-result-service.test.ts": 3,
+        "url-target-guard.test.ts": 3,
+        "usage-metrics-routes.test.ts": 1,
+        "webhook-routes.test.ts": 1
+      },
+      "actantosd/src/v2": {
+        "capability-broker.test.ts": 17,
+        "demo.test.ts": 5,
+        "effect-commit.test.ts": 27,
+        "effect-gateway-replay.test.ts": 7,
+        "effect-permit.test.ts": 30,
+        "egress-cell-runtime.test.ts": 5,
+        "egress-cell.test.ts": 23,
+        "egress-proxy-topology.test.ts": 4,
+        "egress-proxy.test.ts": 24,
+        "evidence-store.test.ts": 27,
+        "fabric-runtime.test.ts": 9,
+        "fabric.test.ts": 18,
+        "failure-semantics.test.ts": 8,
+        "identity-delegation.test.ts": 31,
+        "keyring.test.ts": 19,
+        "llm-authority.test.ts": 9,
+        "network-target-guard.test.ts": 26,
+        "performance.test.ts": 4,
+        "pq-signature.test.ts": 14,
+        "provider-signing.test.ts": 13,
+        "providers-production.test.ts": 26,
+        "replay-store.test.ts": 17,
+        "revocation-runtime.test.ts": 8,
+        "revocation-snapshot.test.ts": 31,
+        "runtime-events.test.ts": 22,
+        "security-context-envelope.test.ts": 29,
+        "security-fuzz.test.ts": 9,
+        "sidecar-server.test.ts": 11,
+        "sidecar.test.ts": 19,
+        "signed-policy-bundle.test.ts": 15,
+        "spiffe-workload-api.test.ts": 13,
+        "spire-identity-runtime.test.ts": 8,
+        "spire-substrate.test.ts": 11,
+        "tetragon-substrate.test.ts": 5,
+        "wasi-containment.test.ts": 12,
+        "workload-identity-provider.test.ts": 73
+      },
+      "actantosd/scripts": {
+        "build-release-artifacts.test.mjs": 1,
+        "fresh-install-smoke.test.mjs": 2,
+        "phase-report-consistency.test.mjs": 10,
+        "security-docs-consistency.test.mjs": 13,
+        "security-fabric-state.test.mjs": 11,
+        "validate-release-maturity-truth.test.mjs": 8,
+        "verify-release-artifacts.test.mjs": 1
+      },
+      "security-bench/src": {
+        "bench.test.ts": 5
+      }
+    }
+  },
+  "security_bench": {
+    "scenarios": 28,
+    "passed": 28,
+    "failed": 0,
+    "attacks": 26,
+    "controls": 2,
+    "prohibited_external_effects": 0,
+    "ran": true,
+    "package_self_tests": 5
+  },
+  "substrate_requirements": {
+    "cedar-pdp": {
+      "substrate": "cedar",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/cedar-provider.test.ts"
+      ],
+      "gated_tests": 4,
+      "gate": "cedar CLI answers --version",
+      "note": "Without the binary these four tests skip, including the one that shows Cedar enforcing a workspace constraint and the one that shows the in-process built-in evaluator agreeing with the CLI on every shape. The remaining Cedar tests in this file use FakeCedarProvider and prove the fail-closed wiring and the entity attributes, not Cedar itself.",
+      "measured_exit_codes": "cedar-policy-cli 4.13.0: Allow exits 0 with ALLOW; Deny exits 2 with a bare DENY; a parse error exits 1 with a × diagnostic; a missing policy file exits 1. A Deny is therefore a decision and not an evaluator failure, and the two are told apart by the diagnostic the CLI appends, not by the exit code alone."
+    },
+    "cedar-fake-provider": {
+      "substrate": "cedar",
+      "level": "SIMULATED",
+      "test_files": [
+        "src/cedar-fixture-parity.test.ts",
+        "src/audit-chain-verifier.test.ts",
+        "src/budget-pipeline.test.ts",
+        "src/intercept-service.test.ts",
+        "src/mcp-gateway.test.ts",
+        "src/policy-bundle-hot-reload.test.ts",
+        "src/postgres-repository.test.ts",
+        "src/tool-result-service.test.ts"
+      ],
+      "gated_tests": 5,
+      "gate": "cedar-policy-cli on PATH for the five parity tests that evaluate a fixture against the real policy; they skip without it. The other two read only the registry file or the authorize input and always run. The seven v1 files themselves need nothing and run in the ordinary suite",
+      "note": "WHAT WAS MEASURED: FakeCedarProvider does not merely 'permit everything except credential_access'. It permits things the shipped policy DENIES, and five of these seven files built their 'allow' precondition on exactly such a decision. commandFromRequest derives the workspace as dirname(resource.path), so a fixture with resource.path = '/workspace' derives the workspace '/', and policies/default.cedar permits only resource.path == '' || resource.workspace_path == '/workspace'. Running the real cedar-policy-cli 4.13.0 over those fixtures: path '/workspace' -> real=forbid fake=permit; 'hello.txt' -> real=forbid fake=permit; '/workspace/README.md' -> both permit. The consequence was not a false alarm but a false certification -- suites asserting 'an allowed tool call is audited' on the strength of an authorization production refuses. FIXED: audit-chain-verifier, tool-result-service and policy-bundle-hot-reload now declare host_workspace_path, so their allow is one the real policy also gives. MCP, AND THE GAP IS NOW CLOSED WITHOUT WIDENING THE DEFAULT: src/mcp-gateway.ts derives resource.path as '/mcp/<server>/tools/<tool>', which policies/default.cedar confines to the approved workspace and therefore denies. That fail-closed default is deliberate and is now asserted as such. Two further defects were found while closing it: policies/templates/mcp-readonly.cedar shipped INERT, permitting nothing, because it gated on Action::\"ReadFile\" and Action::\"ListFiles\" while the gateway emits Action::\"tools/call\" for every MCP call; and it could not have expressed read-only-ness at all, because buildCedarAuthorizeInput never put the mutation and destructive verdicts on the entity. Both fixed: those two attributes are now surfaced additively (a policy that ignores them is unaffected), and the template gates on the action the gateway really emits plus mutation == false and destructive == false. Real cedar, verified: the template permits a read-only non-credential MCP call and refuses the credential, mutating and destructive shapes, including one whose readOnlyHint lied. The default still refuses all five. Absent mutation/destructive reads as TRUE, so an undetermined status denies; the false default was mutation-checked and would have failed open. Selecting this template via CEDAR_POLICY_PATH is the explicit act that opens MCP, and it is not the shipped default. STILL SIMULATED: what these files prove is the surrounding wiring -- audit chaining, budget short-circuit, idempotent replay, approval single-use, dry-run, manifest and SSRF guards -- none of which depends on Cedar's answer. Cedar authorization semantics are proved only by src/cedar-provider.test.ts against the real binary."
+    },
+    "postgres-tenant-rls": {
+      "substrate": "postgres",
+      "level": "INTEGRATION",
+      "test_files": [
+        "src/tenant-isolation.test.ts"
+      ],
+      "gated_tests": 4,
+      "gate": "DATABASE_URL is set and `npm run test:substrate` was used",
+      "note": "pg-mem does not implement RLS, so these cannot be run against the in-memory substitute."
+    },
+    "sidecar-local-socket": {
+      "substrate": "local_socket",
+      "level": "INTEGRATION",
+      "test_files": [
+        "src/v2/sidecar-server.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - the platform always provides a local socket, so this never skips",
+      "note": "On POSIX this is a Unix domain socket in a per-user temporary directory and the file is created 0600. On Windows `node:net` refuses filesystem socket paths, so it is a named pipe instead, which has no filesystem mode; the owner-only assertion is therefore skipped on Windows and the test says so rather than passing vacuously. The named-pipe namespace is ACL'd per user, but that is a claim about Windows and is not asserted here."
+    },
+    "fabric-runtime-wiring": {
+      "substrate": "local_socket",
+      "level": "INTEGRATION",
+      "test_files": [
+        "src/v2/fabric.test.ts",
+        "src/v2/fabric-runtime.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - the socket, the sidecar and the server are all constructed in-process",
+      "note": "These tests do not read ACTANTOS_FABRIC_MODE; they inject the mode, because the mode is process-scoped by design (the agent controls the request, not the operator's environment). The env-to-gate path in src/index.ts is therefore covered by startup-time failure tests only, not by an end-to-end request. No system-level egress or Tetragon policy is verified here."
+    },
+    "docker-internal-cell-network": {
+      "substrate": "docker",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/egress-proxy-topology.test.ts"
+      ],
+      "gated_tests": 4,
+      "gate": "a usable Docker daemon; without one these four tests skip",
+      "note": "Runs real containers and observes what the kernel does: no HTTPS egress, no raw-socket egress, no route to 169.254.169.254, SERVFAIL from the embedded resolver for any name the cell does not host, and a peer reachable by name and by IP so the blocked cases are not just a dead network. These take about 10s and are the slowest tests in the suite. They do NOT start the proxy itself — the proxy is proved separately in egress-proxy.test.ts, and the assertion that the proxy is the cell's only route is a deployment property recorded in docs/ARCHITECTURE_V2.md, not something these tests check."
+    },
+    "postgres-replay-guard": {
+      "substrate": "postgres",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/replay-store.test.ts",
+        "src/v2/effect-gateway-replay.test.ts"
+      ],
+      "gated_tests": 15,
+      "gate": "DATABASE_URL is set and `npm run test:substrate` was used",
+      "note": "Atomic first use (S9) depends on INSERT ... ON CONFLICT DO NOTHING, which pg-mem does not implement, so in-memory cannot demonstrate it. Tenant isolation is proven at the application layer, not by the row-level security policy."
+    },
+    "postgres-evidence-store": {
+      "substrate": "postgres",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/evidence-store.test.ts"
+      ],
+      "gated_tests": 14,
+      "gate": "DATABASE_URL is set and `npm run test:substrate` was used",
+      "note": "Durability, single-writer append order, append-only enforcement and tenant isolation (S13) all need a real PostgreSQL server. RLS here is exercised as an ordinary role via SET LOCAL ROLE, which is the only way to prove it: a superuser bypasses RLS outright."
+    },
+    "postgres-effect-journal": {
+      "substrate": "postgres",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/effect-commit.test.ts"
+      ],
+      "gated_tests": 10,
+      "gate": "DATABASE_URL is set and `npm run test:substrate` was used",
+      "note": "The transition table, the immutability of action_digest, the finality of a terminal outcome and the no-delete rule are BEFORE UPDATE OR DELETE triggers, which pg-mem does not implement. Tenant isolation is exercised as an ordinary role via SET LOCAL ROLE."
+    },
+    "gvisor-sandbox": {
+      "substrate": "gvisor_runsc",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/sandbox-runtime.test.ts",
+        "src/docker-executor.test.ts",
+        "src/server-startup-sandbox.test.ts",
+        "src/gvisor-sandbox-substrate.test.ts"
+      ],
+      "gated_tests": 9,
+      "gate": "ACTANTOS_SUBSTRATE_TESTS=1 and ACTANTOS_GVISOR_DOCKER_HOST naming a daemon whose `docker info --format {{json .Runtimes}}` lists a runsc entry; on this machine that is the isolated dockerd in WSL2 Ubuntu-24.04 at tcp://127.0.0.1:23750, running runsc release-20260928.0. Docker Desktop's own daemon still has no runsc, so these skip",
+      "runtime_skips": [
+        {
+          "test": "the gate still refuses when the live daemon has no runsc",
+          "reason": "the test compares against whatever DOCKER_HOST names when it is unset. The Windows client's default is Docker Desktop, which has no runsc, so it runs there. Inside WSL the default is a unix:///var/run/docker.sock that does not exist — that distro's daemon is reachable only over TCP — so there is no runsc-free daemon to compare against and it skips rather than reporting a product defect that is a property of the host."
+        },
+        {
+          "test": "the executor's own runsc probe is what adds the flag, with nothing injected",
+          "reason": "this one deliberately passes no checkRunsc, so the executor's own `which runsc` decides. runsc is installed in WSL2 and is not on the Windows PATH, so it runs under WSL and skips on Windows. That asymmetry is the point: injecting the gate as () => true would have proved the argv rather than the wiring."
+        }
+      ],
+      "note": "Proven against a real daemon: the same image and daemon run on two different kernels depending only on the runtime flag — /proc/version reads 6.18.33.2-microsoft-standard-WSL2 under the default runtime and 4.19.0-gvisor under runsc, and dmesg returns gVisor's own boot log where the host ring buffer is refused. That difference is what shows the flag is honoured rather than ignored. The executor's real spawn path is included: it runs a container through runsc and the container's own /proc/version is read back through the bind mount, so dropping --runtime runsc fails the test rather than passing it quietly. Egress is NOT claimed here: this daemon's bridge has no external route for either runtime, so blocked egress here cannot be attributed to gVisor's netstack."
+    },
+    "decision-execution": {
+      "substrate": "local_process",
+      "level": "INTEGRATION",
+      "test_files": [
+        "src/decision-execution.test.ts",
+        "src/execution-routes.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - the lookup and the spawn are injected; the durable nonce store and the Ed25519 verifier are the same implementations the production path constructs",
+      "note": "Reads a stored authorization back from PostgreSQL, refuses anything that is not a live allow, and spends the token through the real executeDockerCommand. Identity comes from the record rather than from the caller, so assertClaimsMatch compares a signature against an independent row instead of against itself; argv and workspace_path come from the caller and are the S8 surface. Refuses to construct with an HMAC verifier (S7) and refuses a stored HMAC token by name rather than falling back. Constraints are read from the record and bound by constraints_hash, so a tampered row cannot widen egress. The route is registered only under ACTANTOS_DECISION_EXECUTION=1 and never on a control plane, and a test asserts the route is absent otherwise. Does NOT prove that a container started this way is genuinely isolated, or that the Ed25519 private key stays off the executor host."
+    },
+    "docker-executor": {
+      "substrate": "docker",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/docker-executor.test.ts",
+        "src/docker-command-plan.test.ts",
+        "src/decision-command.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none in these three files — they still assert against a recorded command, which is the right check for the decision logic. The live counterparts are in docker-container-execution below and gvisor-sandbox above.",
+      "note": "Container argv is asserted against a recorded command, not against a live container. docker-command-plan.test.ts asserts argv construction only and runs no container. Backed live in docker-container-execution below: command substitution and workspace remount (S8); expiry, tampering and claim-binding (S12); single-use and the nonce claim (S9); --network none isolation and the internal egress cell (S2); non-root uid and read-only rootfs; the whole Ed25519 path including the HMAC-downgrade and untrusted-key refusals (S7); and every resource limit and output rule listed above. Backed live in gvisor-sandbox above: the --runtime runsc flag, including the executor's own probe for it. NOT claimed: that these limits hold on a daemon that ignores them. Each test's control says what the daemon does without the flag, and a daemon that shipped the unsafe default would make the control fail rather than the test pass."
+    },
+    "pi-adapter-shell-executor": {
+      "substrate": "docker",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "../packages/pi-adapter/src/shell_executor.test.ts",
+        "../packages/pi-adapter/src/shell_executor_substrate.test.ts"
+      ],
+      "gated_tests": 8,
+      "gate": "ACTANTOS_SUBSTRATE_TESTS=1 and a working Docker daemon — needs real containers and pulls alpine",
+      "note": "Enforces the same command/constraints/expiry/single-use binding as docker-executor, and its drift guards import the actantosd implementations to prove the restated digests match. The substrate file starts real containers on this path, which is the point of running the fork: two executors agreeing on recorded argv can still disagree about what Docker receives. Says nothing about gVisor: checkRunsc is stubbed to false.",
+      "host_skips": [
+        {
+          "test": "guarded_read.test.ts — a symlink to a credential file is resolved before the decision",
+          "reason": "creating a file symlink returns EPERM on Windows without Developer Mode or elevation. The test probes the capability rather than the platform name and runs wherever symlinks can be created. It is skipped, not passing: the symlink-resolution path is unexercised here and no other test covers it."
+        }
+      ]
+    },
+    "docker-container-execution": {
+      "substrate": "docker",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/docker-executor-substrate.test.ts"
+      ],
+      "gated_tests": 26,
+      "gate": "ACTANTOS_SUBSTRATE_TESTS=1 and a working Docker daemon — needs real containers and pulls alpine",
+      "note": "Proves the bound command runs, that a substituted one is refused with Docker live, that --network none leaves no resolution, that the container is non-root with a read-only root filesystem, and that one decision token yields one container. Added since: the Ed25519 verifier end to end (an Ed25519-signed token starts a real container, an HMAC token under the same verifier is refused, and a well-formed token signed by an untrusted key is refused), and the egress cell — the executor provisions actantos_egress_cell and the test reads `Internal: true` back from the daemon while a workload on it fails to resolve a name. Both were mutation-checked against the product code. Says nothing about gVisor: runsc is stubbed via checkRunsc. The nonce store is in-process, so this does not show replay resistance across an executor restart."
+    },
+    "tetragon-runtime": {
+      "substrate": "tetragon_ebpf",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/cli-emit-tetragon.test.ts",
+        "src/v2/tetragon-substrate.test.ts"
+      ],
+      "gated_tests": 5,
+      "gate": "ACTANTOS_SUBSTRATE_TESTS=1 and a real Tetragon agent on a kernel where the emitted policy loads. tetragon-substrate.test.ts writes toTracingPolicyYaml(buildTracingPolicy()) to disk and loads THAT -- a hand-written policy would prove Tetragon works and would prove nothing about this code -- then runs real binaries and reads the exporter at /var/log/tetragon/tetragon.log, not the agent's stdout. It skips with 'tetragon refused the policy this repository emits' if the agent rejects it, and with 'tetragon emitted no events on this kernel' if the policy loads but nothing arrives. Those are different failures and are gated separately.",
+      "note": "RUN here: five of five, skipped zero, against a live Tetragon v1.7.1 loading this repository's unmodified policy output. One asserts the agent accepts the policy and attaches a generic_kprobe sensor; one asserts exported lines reach the adapter as process_kprobe events; one asserts a real denied-binary exec becomes an S3 denied_binary_exec signal; one is the negative control that /bin/ls produces no signal; and one asserts the kernel-side selector itself discriminates -- three touch runs and three ls runs yield exactly three events -- so the classification tests cannot be satisfied by an adapter filtering a stream that was never filtered. A second defect was fixed alongside the Mask operator: the adapter modelled only process_exec, which is emitted by the built-in base sensor, so it could not consume the events its own policy selects. Every security_bprm_check line was classified 'unmodelled' and dropped. process_kprobe is now parsed and security_bprm_check classified, using the kernel-reported linux_binprm_arg.path rather than the cached process.binary -- the hook exists precisely because the cached value can be stale. The real captured event shapes are pinned in runtime-events.test.ts, including the negative case that a bprm event with its path stripped must not be classified from process.binary. Mutation-verified, and the results are not uniform. Restoring the Mask operator makes all five tests FAIL. Treating kprobe events as unmodelled -- the old behaviour -- fails one. Reading the cached process.binary instead of the kernel-reported binprm path fails one. Removing the adapter's own deny-list check is NOT caught here: the policy's BPF selector already filters to the denied binary, so the adapter check is redundant on this path rather than absent. The unit suite catches that one (runtime-events.test.ts asserts a bprm event naming an allowed binary produces no signal), which is recorded rather than papered over. A first version of this file had a worse defect, also found by mutation: using the emitted policy for the capability probe meant a regression that made the policy unloadable turned every test into a SKIP rather than a failure (pass=0 fail=0 skipped=5). The gate now probes substrate availability with a separate known-good policy, and each test asserts the emitted policy is accepted as a test failure. Nothing in S1-S14 depends on this layer, and that remains the reason a substrate failure here is a gap in evidence rather than a security regression."
+    },
+    "spire-workload-identity": {
+      "substrate": "spire",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/spire-substrate.test.ts"
+      ],
+      "gated_tests": 11,
+      "gate": "spire-server and spire-agent are on PATH, ACTANTOS_SPIRE_SPIFFE_ID / ACTANTOS_SPIRE_TRUST_DOMAIN / ACTANTOS_SPIRE_JWKS_URI name a running trust domain, and ACTANTOS_SPIRE_WORKLOAD_SOCKET (or a unix:// ACTANTOS_SPIRE_WORKLOAD_API) is the agent's Workload API socket. The socket is the binding constraint: the Workload API is gRPC over a Unix domain socket, so on Windows these tests always skip no matter what is installed.",
+      "note": "RUN here against a live SPIRE 1.15.3 trust domain (server, join-token-attested agent, a registration entry for t_spire/pi_demo, and a bundle endpoint publishing the trust domain's JWKS): eleven of eleven pass, skipped zero. One obtains an SVID through this project's own gRPC client rather than through spire-agent's CLI, and asserts it is the identity that was asked for; one verifies it against the trust domain's published key; one asserts SPIRE still signs ES256 with no `iss`, so a change in either is reported rather than absorbed; one proves the raw JWS signature does NOT verify unconverted while the product's own conversion does, so the DER step cannot quietly become a pass-through; one issues a real identity through the provider; one asserts the trust domain refuses an SVID for a workload with no entry for it, which is the S4 claim itself; and one asserts this client's SVID names the same subject and audience as SPIRE's own client's. One honest limit: dropping the subject trust-domain check entirely leaves this suite green, because a well-behaved authority only ever issues for its own trust domain. That property is covered in src/v2/workload-identity-provider.test.ts, which asserts a foreign-domain subject is refused. The gated file is src/v2/spire-substrate.test.ts."
+    },
+    "production-credential-providers": {
+      "substrate": "local_http",
+      "level": "INTEGRATION",
+      "test_files": [
+        "src/v2/provider-signing.test.ts",
+        "src/v2/providers-production.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - node:crypto and a loopback HTTP server are always available",
+      "note": "Real sockets, real HTTP, real RSA and HMAC signatures. The SigV4 signer is checked against AWS's published get-vanilla signature and the documented key-derivation chain, and the test server rebuilds the signature from the bytes it received rather than trusting the signer. NOT RUN against github.com, AWS or Vault: vendor acceptance, App key provisioning and IAM trust-policy correctness are unverified."
+    },
+    "jwt-svid-verification": {
+      "substrate": "local_socket",
+      "level": "INTEGRATION",
+      "test_files": [
+        "src/v2/workload-identity-provider.test.ts",
+        "src/v2/spire-identity-runtime.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - node:crypto and a local HTTP server are always available",
+      "note": "Every SVID in this suite is signed by a key the test itself generated, and every JWKS is served by a test HTTP server. That makes the verification and the sidecar's enforcement of it real, and makes SPIRE itself absent. Reading these as evidence that SPIRE issues correct SVIDs would be wrong; see spire-workload-identity above."
+    },
+    "property-based-fuzzing": {
+      "substrate": "none",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/security-fuzz.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - fast-check is a devDependency and needs no external service",
+      "note": "Property-based fuzzing of the verifiers that stand between the network and an allow: signed bundle, security context envelope and revocation snapshot. The property is that acceptance is a pure function of the canonical bytes, in both directions, so the suite cannot be satisfied by a verifier that refuses everything. Also covers arbitrary JSON/string/object refusal without throwing, re-signing with an untrusted key, and the scope algebra behind S6. It found one real defect: the network target guard recursed without bound and could be crashed by agent-controlled arguments."
+    },
+    "key-rotation": {
+      "substrate": "none",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/keyring.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - ed25519 keypairs are generated in-process",
+      "note": "An issuer could not rotate at all before this: one issuer id mapped to exactly one PEM with no validity window, captured at construction. Both failure modes surfaced as invalid_signature under one unchanging issuer id, so a rotation and a forgery were indistinguishable. Tests cover the overlap window in both directions, retirement of the old key, and the two properties rotation must not break: a running lease keeps its anti-rollback floor across setTrustedKeys, and withdrawing keys neither tears down an active lease nor clears an applied revocation list."
+    },
+    "post-quantum-signatures": {
+      "substrate": "none",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/pq-signature.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - ML-DSA and SLH-DSA keys are PEM fixtures checked in with the test",
+      "note": "Phase P experiment 1. Measured ML-DSA-44, ML-DSA-65 and SLH-DSA-SHA2-128s against Ed25519 through node:crypto: sizes, sign and verify latency, and key generation. Two results matter. Verification is not a migration risk -- ML-DSA verifies faster than Ed25519 on the multi-kilobyte canonical JSON this fabric signs. And ML-DSA cannot generate a key on this runtime at all, so a lattice migration is blocked on where the issuer key comes from, while the hash-based family has a complete path today. The tests assert that a cryptographically VALID ML-DSA and SLH-DSA signed policy bundle and revocation snapshot are refused as unsupported_algorithm, and that no source file calls registerSignatureAlgorithm. Nothing about hybrid construction, key agility, or whether hash-based assumptions fit this threat model was settled; those are decisions."
+    },
+    "wasi-containment": {
+      "substrate": "none",
+      "level": "REAL_SUBSTRATE",
+      "test_files": [
+        "src/v2/wasi-containment.test.ts"
+      ],
+      "gated_tests": 0,
+      "gate": "none - the guest binary is checked in and node:wasi is in the runtime",
+      "note": "Phase P experiment 2. Measured what WASI actually contains: traversal out of a preopened directory is refused as ENOTCAPABLE and is distinguishable from ENOENT, absolute host paths do not exist in the guest namespace, there are no socket syscalls at all, and the environment is empty unless the host passes it. Two weakenings were found and asserted rather than discovered later: Node's WASI has no read-only preopen, so a preopened directory is writable, and fd_readdir is unimplemented, so a guest cannot enumerate what it was given. The conclusion is directional and is the reason WASI was not adopted: WASI contains a guest from its host, and every one of those properties depends on the import object the host chose. This project's premise is that the host is already compromised, so the boundary WASI enforces is not the one that matters, and WASI provides no workload identity, so it cannot satisfy S4 on its own."
+    },
+    "confidential-computing": {
+      "substrate": "none",
+      "level": "NOT_IMPLEMENTED",
+      "test_files": [],
+      "gated_tests": 0,
+      "gate": "requires SEV-SNP or TDX hardware, which this machine does not have — measured, see note",
+      "note": "Phase P experiment 3, NOT RUN. Nothing was measured because there is nothing here to measure, and the hardware that would make it measurable is absent. Measured on this host with cpuid, not inferred from the marketing name: leaf 7 subleaf 0 ECX = 0x00400784, so TDX (bit 20) = 0 and TME (bit 5) = 0; and the AMD leaf 0x8000001F is not supported at all (max extended leaf = 0x80000008), so there is no SEV or SEV-SNP capability on this part. The CPU is a 12th Gen Intel Core i7-12700K, family 6 model 151 (Raptor Lake), and VT-x is not even exposed to the OS (Win32_Processor.VirtualizationFirmwareEnabled = False). Separately confirmed: there is no SEV, TDX or attestation code, test or configuration anywhere in the tree — the only matches for those terms are this documentation and unrelated CONFIDENTIAL data_clearance values. What closing this would take: a machine with an AMD EPYC 9004 (Milan, SEV-SNP) or Intel Sapphire Rapids (TDX); a confidential VM whose owner policy is attested before any guest code runs; a measurement value bound to that policy; and an attestation client that verifies the chain to an AMD or Intel root of trust. Only then would the property be testable: that the policy bundle signing key and the policy lease are unreadable by anything outside the enclave, including the hypervisor and the host kernel. Until that exists the project's stated scope applies unchanged -- baseline v2 does not claim protection after host-kernel or root compromise -- and confidential computing is the only technology that would change that sentence. An itemized waiver covering exactly this gap is drafted in docs/OPEN_WAIVERS.md and is unsigned; this entry is the only one in the file that cannot be closed by any test on any host reachable from here."
+    }
+  },
+  "substrate_run": {
+    "platform": "win32",
+    "spire_workload_api": false,
+    "postgres_integration": false,
+    "substrates": {
+      "cedar": true,
+      "gvisor_runsc": false,
+      "tetragon_ebpf": false,
+      "spire": false,
+      "docker": true,
+      "postgres": false,
+      "local_socket": true,
+      "local_http": true
+    },
+    "substrate_versions": {
+      "cedar": "cedar-policy-cli 4.13.0",
+      "gvisor_runsc": null,
+      "tetragon_ebpf": null,
+      "spire": null,
+      "docker": "29.6.2",
+      "postgres": null
+    },
+    "substrate_tests_unavailable": [
+      {
+        "group": "postgres-tenant-rls",
+        "substrate": "postgres",
+        "tests_not_run": 4,
+        "gate": "DATABASE_URL is set and `npm run test:substrate` was used"
+      },
+      {
+        "group": "postgres-replay-guard",
+        "substrate": "postgres",
+        "tests_not_run": 15,
+        "gate": "DATABASE_URL is set and `npm run test:substrate` was used"
+      },
+      {
+        "group": "postgres-evidence-store",
+        "substrate": "postgres",
+        "tests_not_run": 14,
+        "gate": "DATABASE_URL is set and `npm run test:substrate` was used"
+      },
+      {
+        "group": "postgres-effect-journal",
+        "substrate": "postgres",
+        "tests_not_run": 10,
+        "gate": "DATABASE_URL is set and `npm run test:substrate` was used"
+      },
+      {
+        "group": "gvisor-sandbox",
+        "substrate": "gvisor_runsc",
+        "tests_not_run": 9,
+        "gate": "ACTANTOS_SUBSTRATE_TESTS=1 and ACTANTOS_GVISOR_DOCKER_HOST naming a daemon whose `docker info --format {{json .Runtimes}}` lists a runsc entry; on this machine that is the isolated dockerd in WSL2 Ubuntu-24.04 at tcp://127.0.0.1:23750, running runsc release-20260928.0. Docker Desktop's own daemon still has no runsc, so these skip"
+      },
+      {
+        "group": "decision-execution",
+        "substrate": "local_process",
+        "tests_not_run": 0,
+        "gate": "none - the lookup and the spawn are injected; the durable nonce store and the Ed25519 verifier are the same implementations the production path constructs"
+      },
+      {
+        "group": "tetragon-runtime",
+        "substrate": "tetragon_ebpf",
+        "tests_not_run": 5,
+        "gate": "ACTANTOS_SUBSTRATE_TESTS=1 and a real Tetragon agent on a kernel where the emitted policy loads. tetragon-substrate.test.ts writes toTracingPolicyYaml(buildTracingPolicy()) to disk and loads THAT -- a hand-written policy would prove Tetragon works and would prove nothing about this code -- then runs real binaries and reads the exporter at /var/log/tetragon/tetragon.log, not the agent's stdout. It skips with 'tetragon refused the policy this repository emits' if the agent rejects it, and with 'tetragon emitted no events on this kernel' if the policy loads but nothing arrives. Those are different failures and are gated separately."
+      },
+      {
+        "group": "spire-workload-identity",
+        "substrate": "spire",
+        "tests_not_run": 11,
+        "gate": "spire-server and spire-agent are on PATH, ACTANTOS_SPIRE_SPIFFE_ID / ACTANTOS_SPIRE_TRUST_DOMAIN / ACTANTOS_SPIRE_JWKS_URI name a running trust domain, and ACTANTOS_SPIRE_WORKLOAD_SOCKET (or a unix:// ACTANTOS_SPIRE_WORKLOAD_API) is the agent's Workload API socket. The socket is the binding constraint: the Workload API is gRPC over a Unix domain socket, so on Windows these tests always skip no matter what is installed."
+      },
+      {
+        "group": "property-based-fuzzing",
+        "substrate": "none",
+        "tests_not_run": 0,
+        "gate": "none - fast-check is a devDependency and needs no external service"
+      },
+      {
+        "group": "key-rotation",
+        "substrate": "none",
+        "tests_not_run": 0,
+        "gate": "none - ed25519 keypairs are generated in-process"
+      },
+      {
+        "group": "post-quantum-signatures",
+        "substrate": "none",
+        "tests_not_run": 0,
+        "gate": "none - ML-DSA and SLH-DSA keys are PEM fixtures checked in with the test"
+      },
+      {
+        "group": "wasi-containment",
+        "substrate": "none",
+        "tests_not_run": 0,
+        "gate": "none - the guest binary is checked in and node:wasi is in the runtime"
+      }
+    ],
+    "substrate_tests_actually_run": false
+  },
+  "invariants": {
+    "declared": 14,
+    "cited_without_tests": []
+  }
+}

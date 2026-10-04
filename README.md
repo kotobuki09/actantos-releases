@@ -16,6 +16,24 @@ This repository is the **public release surface** (artifacts, notes, installable
 
 > **Mode A note:** Public claim baseline is Quiet Open-Core **v1.0.0** per plan `release-maturity-truth.json`. Stage 3 / v1.1.0 engineering in this tree is not Mode A public maturity and is not production-qualified.
 
+### v2 security fabric — in progress, published as evidence only
+
+The `docs/` directory now carries the v2 agent security fabric's own record, including its test
+matrix, its invariant list, and the waivers it has **not** signed. The fabric's source is **not**
+in this repository and the installable tree above is unchanged; nothing here alters the v1.0.0
+public baseline.
+
+What that evidence currently says about itself, stated exactly as the documents state it:
+
+- Fourteen invariants (S1–S14). Twelve are `HELD`; **S4 is `PARTIAL`**.
+- Locally verified on one host: 1007 unit tests, 915 passing, 0 failing, 92 skipped, plus 135
+  gated substrate tests against real Docker, PostgreSQL and gVisor. **Not production-qualified,
+  and not a claim about any other host.**
+- **Confidential computing is not implemented.** `docs/OPEN_WAIVERS.md` carries the itemized
+  waiver `W-001`, which is **unsigned**. An unsigned waiver is an open item, not a concession.
+- Nothing in this fabric defends against a compromised host kernel or root. It defends against a
+  compromised agent.
+
 ---
 
 ## The problem
