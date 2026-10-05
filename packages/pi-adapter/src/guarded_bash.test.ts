@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { createHmac } from "node:crypto"
+import { createHash, createHmac, randomUUID } from "node:crypto"
 import http from "node:http"
 import test from "node:test"
 import type { AddressInfo } from "node:net"
@@ -13,6 +13,8 @@ import {
   type GuardedBashPlan,
   runGuardedBash,
 } from "./guarded_bash.ts"
+import { canonicalCommandHash } from "./shell_executor.ts"
+import { InMemoryDecisionNonceStore } from "../../../actantosd/src/decision-nonce-store.ts"
 
 type CapturedRequest = Record<string, unknown>
 
@@ -154,6 +156,30 @@ class FakeChildProcess extends EventEmitter {
 const signDecisionToken = (payload: string, secret: string): string =>
   `${Buffer.from(payload, "utf8").toString("base64url")}.${createHmac("sha256", secret).update(payload).digest("base64url")}`
 
+const sortJson = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(sortJson)
+  }
+  if (typeof value === "object" && value !== null) {
+    const sorted: Record<string, unknown> = {}
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      sorted[key] = sortJson((value as Record<string, unknown>)[key])
+    }
+    return sorted
+  }
+  return value
+}
+
+const canonicalHash = (value: unknown): string =>
+  createHash("sha256").update(JSON.stringify(sortJson(value)), "utf8").digest("hex")
+
+/**
+ * Mints the token a real server would return for the given command and envelope.
+ *
+ * The executor now verifies `command_hash` and `constraints_hash`, so a fixture that omits them
+ * is no longer a token the server could issue. These defaults describe `printf hello` in
+ * `/workspace` with the network_mode "none" envelope; override per test.
+ */
 const createDecisionToken = (
   overrides: Partial<{
     request_id: string
@@ -161,6 +187,10 @@ const createDecisionToken = (
     agent_id: string
     session_id: string
     tool_name: string
+    command_hash: string
+    constraints_hash: string
+    nonce: string
+    exp: number
   }> = {},
   secret = "adapter-secret",
 ): string =>
@@ -171,6 +201,17 @@ const createDecisionToken = (
       agent_id: "pi_demo",
       session_id: "s_demo",
       tool_name: "guarded_bash",
+      scope_hash: "scope-demo",
+      command_hash: canonicalCommandHash(["printf", "hello"], "/workspace"),
+      constraints_hash: canonicalHash({
+        max_output_bytes: 200_000,
+        network_allowlist: [],
+        network_mode: "none",
+        timeout_ms: 30_000,
+      }),
+      // S9: the executor claims this before spawning, so a token must always carry one.
+      nonce: randomUUID(),
+      exp: Math.floor(Date.now() / 1_000) + 600,
       ...overrides,
     }),
     secret,
@@ -460,6 +501,7 @@ test("Given an allowed shell plan when runGuardedBash executes Then it posts an 
     "printf hello",
     {
       hmacSecret: "adapter-secret",
+      nonceStore: new InMemoryDecisionNonceStore(),
       spawnCommand: (_command, _args) => {
         const child = new FakeChildProcess()
         const handler = spawnHandlers.shift()
@@ -519,6 +561,7 @@ test("Given a non-zero exit shell command when runGuardedBash executes Then it p
     "printf hello",
     {
       hmacSecret: "adapter-secret",
+      nonceStore: new InMemoryDecisionNonceStore(),
       spawnCommand: (_command, _args) => {
         const child = new FakeChildProcess()
         const handler = spawnHandlers.shift()
@@ -546,7 +589,14 @@ test("Given a timed out shell command when runGuardedBash executes Then it posts
       decision_id: "4ea4e795-f42c-472f-8d94-45152c3b53ae",
       reason: "permitted by policy",
       reason_code: "allowed",
-      decision_token: createDecisionToken(),
+      decision_token: createDecisionToken({
+        constraints_hash: canonicalHash({
+          max_output_bytes: 200_000,
+          network_allowlist: [],
+          network_mode: "none",
+          timeout_ms: 5,
+        }),
+      }),
       constraints: {
         network_mode: "none",
         timeout_ms: 5,
@@ -580,6 +630,7 @@ test("Given a timed out shell command when runGuardedBash executes Then it posts
     "printf hello",
     {
       hmacSecret: "adapter-secret",
+      nonceStore: new InMemoryDecisionNonceStore(),
       spawnCommand: (_command, _args) => {
         const child = new FakeChildProcess()
         const handler = spawnHandlers.shift()
@@ -624,6 +675,7 @@ test("Given an approval-required shell command when runGuardedBash executes Then
       "git push --dry-run origin main",
       {
         hmacSecret: "adapter-secret",
+        nonceStore: new InMemoryDecisionNonceStore(),
       },
     ),
     (error: unknown) =>

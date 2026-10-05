@@ -4,7 +4,7 @@ import test from "node:test"
 import { newDb } from "pg-mem"
 
 import { PostgresBudgetProvider } from "./budget-provider.ts"
-import { migrateDatabaseForUnitTests, seedDemoData, type Database } from "./database.ts"
+import { migrateDatabase, seedDemoData, type Database } from "./database.ts"
 
 const createTestDatabase = async (): Promise<Database> => {
   const memoryDb = newDb()
@@ -14,6 +14,7 @@ const createTestDatabase = async (): Promise<Database> => {
 
   const database: Database = {
     async query(sql, params = []) {
+      if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
       const result = await pool.query(sql, [...params])
       return result.rows
     },
@@ -24,6 +25,7 @@ const createTestDatabase = async (): Promise<Database> => {
         await client.query("BEGIN")
         const result = await callback({
           async query(sql, params = []) {
+            if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
             const queryResult = await client.query(sql, [...params])
             return queryResult.rows
           },
@@ -42,7 +44,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabaseForUnitTests(database)
+  await migrateDatabase(database)
   await seedDemoData(database)
 
   return database

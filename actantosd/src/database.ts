@@ -1,11 +1,27 @@
 import { readdir, readFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { AsyncLocalStorage } from "node:async_hooks"
 
 import { CompiledQuery, Kysely, PostgresDialect } from "kysely"
 import { Pool } from "pg"
 
 import type { ActantDatabaseSchema } from "./database-schema.ts"
+
+export const tenantLocalStorage = new AsyncLocalStorage<string>()
+
+/**
+ * Validates a tenant ID to prevent SQL injection via SET LOCAL interpolation.
+ * Only alphanumeric, dash, and underscore characters are allowed.
+ */
+const TENANT_ID_SAFE = /^[a-zA-Z0-9_-]+$/
+
+const sanitizeTenantId = (value: string): string => {
+  if (!TENANT_ID_SAFE.test(value)) {
+    throw new Error(`invalid_tenant_id: tenant_id contains illegal characters`)
+  }
+  return value
+}
 
 type QueryRow = Record<string, unknown>
 
@@ -39,7 +55,7 @@ export const parsePgBigInt = (
   return 0n
 }
 
-class PostgresDatabase implements Database {
+export class PostgresDatabase implements Database {
   readonly db: Kysely<ActantDatabaseSchema>
 
   constructor(pool: Pool) {
@@ -52,6 +68,33 @@ class PostgresDatabase implements Database {
     sql: string,
     params: readonly unknown[] = [],
   ): Promise<readonly TRow[]> {
+    const tenantId = tenantLocalStorage.getStore()
+    if (tenantId) {
+      const safeTenantId = sanitizeTenantId(tenantId)
+      return this.db.transaction().execute(async (trx) => {
+        try {
+          await trx.executeQuery(
+            CompiledQuery.raw(`SET LOCAL actantos.tenant_id = '${safeTenantId}'`),
+          )
+        } catch (error: any) {
+          if (
+            error &&
+            typeof error.message === "string" &&
+            (error.message.includes("unrecognized configuration parameter") ||
+              error.message.includes("pg-mem"))
+          ) {
+            console.warn("Unrecognized configuration parameter actantos.tenant_id in transaction query")
+          } else {
+            throw error
+          }
+        }
+        const result = await trx.executeQuery<TRow>(
+          CompiledQuery.raw(sql, [...params]),
+        )
+        return result.rows
+      })
+    }
+
     const result = await this.db.executeQuery<TRow>(
       CompiledQuery.raw(sql, [...params]),
     )
@@ -61,9 +104,29 @@ class PostgresDatabase implements Database {
   async transaction<T>(
     callback: (client: DatabaseClient) => Promise<T>,
   ): Promise<T> {
-    return this.db.transaction().execute(async (transaction) =>
-      callback(createQueryClient(transaction)),
-    )
+    return this.db.transaction().execute(async (transaction) => {
+      const tenantId = tenantLocalStorage.getStore()
+      if (tenantId) {
+        const safeTenantId = sanitizeTenantId(tenantId)
+        try {
+          await transaction.executeQuery(
+            CompiledQuery.raw(`SET LOCAL actantos.tenant_id = '${safeTenantId}'`),
+          )
+        } catch (error: any) {
+          if (
+            error &&
+            typeof error.message === "string" &&
+            (error.message.includes("unrecognized configuration parameter") ||
+              error.message.includes("pg-mem"))
+          ) {
+            console.warn("Unrecognized configuration parameter actantos.tenant_id in transaction block")
+          } else {
+            throw error
+          }
+        }
+      }
+      return callback(createQueryClient(transaction))
+    })
   }
 
   async close(): Promise<void> {
@@ -89,23 +152,15 @@ const createQueryClient = (
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(currentDirectory, "..")
 
-export type RunSqlDirectoryOptions = {
-  readonly rootDirectory?: string
-  /** Exact file names to skip (e.g. RLS migrations unsupported by pg-mem). */
-  readonly excludeFileNames?: readonly string[]
-}
-
 export const runSqlDirectory = async (
   database: DatabaseClient,
   relativeDirectoryPath: string,
-  options: RunSqlDirectoryOptions = {},
+  rootDirectory: string = projectRoot,
 ): Promise<void> => {
-  const rootDirectory = options.rootDirectory ?? projectRoot
-  const exclude = new Set(options.excludeFileNames ?? [])
   const directoryPath = path.join(rootDirectory, relativeDirectoryPath)
   const directoryEntries = await readdir(directoryPath, { withFileTypes: true })
   const sqlFileNames = directoryEntries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".sql") && !exclude.has(entry.name))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
     .map((entry) => entry.name)
     .sort((left, right) => left.localeCompare(right))
 
@@ -122,19 +177,8 @@ export const createDatabase = (connectionString: string): Database =>
     }),
   )
 
-/** Full production migrations including PostgreSQL RLS (008). */
 export const migrateDatabase = async (database: Database): Promise<void> => {
   await runSqlDirectory(database, "sql/migrations")
-}
-
-/**
- * Unit-test migrations for pg-mem: identity + composite FKs only.
- * RLS (008_tenant_rls.sql) requires real PostgreSQL and is exercised by integration fixtures.
- */
-export const migrateDatabaseForUnitTests = async (database: Database): Promise<void> => {
-  await runSqlDirectory(database, "sql/migrations", {
-    excludeFileNames: ["008_tenant_rls.sql"],
-  })
 }
 
 export const seedDemoData = async (database: Database): Promise<void> => {

@@ -1,0 +1,3 @@
+ALTER TABLE tool_calls
+ADD COLUMN IF NOT EXISTS worker_id UUID,
+ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ;

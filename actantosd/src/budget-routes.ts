@@ -6,11 +6,11 @@ import { z, ZodError } from "zod"
 import type { Database } from "./database.ts"
 
 const budgetsQuerySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
 })
 
 const budgetBodySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
   scope_type: z.enum(["tenant", "agent", "session", "tool"]),
   scope_id: z.string().min(1),
   metric: z.literal("tool_calls").optional().default("tool_calls"),

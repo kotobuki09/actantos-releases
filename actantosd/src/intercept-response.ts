@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto"
+
 import {
   type ToolCallContext,
   type ToolCallInterceptionRequest,
@@ -5,6 +7,7 @@ import {
   toolCallInterceptionResponseSchema,
 } from "./contracts.ts"
 import { canonicalHash, canonicalStringify, signDecisionToken } from "./hash.ts"
+import { canonicalCommandHash, commandFromRequest } from "./decision-command.ts"
 import type { DecisionConstraints } from "./decision-constraints.ts"
 
 type CreateDecisionTokenOptions = {
@@ -16,6 +19,17 @@ type CreateDecisionTokenOptions = {
   readonly expiresAtEpochSeconds: number
   readonly hmacSecret: string
   readonly approved?: boolean
+  /** Override the single-use nonce (S9). One is generated per token when absent. */
+  readonly nonce?: string
+  /**
+   * How to sign the canonical payload. Defaults to HMAC with `hmacSecret`.
+   *
+   * HMAC is symmetric, so every component that verifies a token can also mint one. That is
+   * acceptable for the evidence chain, where one party does both jobs, and wrong for the decision
+   * executor, which sits on the other side of the trust boundary. Pass an Ed25519 signer here and
+   * the token becomes verifiable by a party that cannot issue it (S7).
+   */
+  readonly sign?: (payload: string) => string
 }
 
 type CreateResponseBaseOptions = {
@@ -72,24 +86,36 @@ export const createToolCallContext = (
 
 export const createDecisionToken = (
   options: CreateDecisionTokenOptions,
-): string =>
-  signDecisionToken(
-    canonicalStringify({
-      decision_id: options.decisionId,
-      tool_call_id: options.toolCallId,
-      request_id: options.request.request_id,
-      tenant_id: options.request.tenant_id,
-      agent_id: options.request.agent.id,
-      session_id: options.request.session.id,
-      tool_name: options.request.tool.name,
-      scope_hash: options.scopeHash,
-      constraints_hash: canonicalHash(options.constraints),
-      decision: "allow",
-      exp: options.expiresAtEpochSeconds,
-      ...(options.approved === true ? { approved: true } : {}),
-    }),
-    options.hmacSecret,
-  )
+): string => {
+  // Derived from the same request the policy engine evaluated, so the token cannot
+  // describe a different command than the one that was authorized (S8).
+  const command = commandFromRequest(options.request)
+
+  const payload = canonicalStringify({
+    decision_id: options.decisionId,
+    tool_call_id: options.toolCallId,
+    request_id: options.request.request_id,
+    tenant_id: options.request.tenant_id,
+    agent_id: options.request.agent.id,
+    session_id: options.request.session.id,
+    tool_name: options.request.tool.name,
+    scope_hash: options.scopeHash,
+    constraints_hash: canonicalHash(options.constraints),
+    command_hash: canonicalCommandHash(command.argv, command.workspacePath),
+    // S9: one nonce per token, so a captured token is single-use rather than replayable for its
+    // whole TTL. The executor consumes it before spawning.
+    nonce: options.nonce ?? randomUUID(),
+    decision: "allow",
+    exp: options.expiresAtEpochSeconds,
+    ...(options.approved === true ? { approved: true } : {}),
+  })
+
+  // The claims are byte-identical whichever scheme signs them. Only the envelope differs, so a token
+  // minted with Ed25519 and one minted with HMAC carry exactly the same authorization.
+  return options.sign === undefined
+    ? signDecisionToken(payload, options.hmacSecret)
+    : options.sign(payload)
+}
 
 export const createDenyResponse = (
   options: CreateDenyResponseOptions,

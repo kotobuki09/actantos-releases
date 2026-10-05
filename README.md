@@ -7,23 +7,25 @@
 | | |
 | --- | --- |
 | **Mode A public baseline** | **[v1.0.0 Quiet Open-Core](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0)** — claim / maturity SoT for Mode A |
-| **Engineering tree in this checkout** | Package `1.1.0` / Stage 3 code may exist here as **implemented / local** work — **not** production-qualified and **not** the Mode A marketing baseline |
+| **Engineering tree in this checkout** | Package `1.1.0` (`quiet-open-core` lineage) — the locally-verified build, including the v2 security fabric's source and tests; **not** production-qualified and **not** the Mode A marketing baseline. The Stage 3 `v1.1.0` lineage remains at [tag v1.1.0](https://github.com/kotobuki09/actantos-releases/tree/v1.1.0). |
 | **Website** | [actantos.com](https://actantos.com) · [roadmap](https://actantos.com/roadmap) · [v1](https://actantos.com/v1) |
 | **What Mode A means** | Self-host Enforcement Kernel (Quiet Open-Core): fail-closed decisions, frozen `/v1`, installable open-core surface. Enterprise multi-tenant / production-qualified claims are Mode B / conditional. |
 | **Ship rule (lab)** | Built + tests pass supports *local* ship evidence; it does **not** by itself authorize production-qualified marketing claims. |
 
 This repository is the **public release surface** (artifacts, notes, installable tree).
 
-> **Mode A note:** Public claim baseline is Quiet Open-Core **v1.0.0** per plan `release-maturity-truth.json`. Stage 3 / v1.1.0 engineering in this tree is not Mode A public maturity and is not production-qualified.
+> **Mode A note:** Public claim baseline is Quiet Open-Core **v1.0.0** per plan `release-maturity-truth.json`. The v1.1.0 engineering in this tree is not Mode A public maturity and is not production-qualified.
 
-### v2 security fabric — in progress, published as evidence only
+### v2 security fabric — source and evidence in this tree
 
-The `docs/` directory now carries the v2 agent security fabric's own record, including its test
-matrix, its invariant list, and the waivers it has **not** signed. The fabric's source is **not**
-in this repository and the installable tree above is unchanged; nothing here alters the v1.0.0
-public baseline.
+The `actantosd/` tree is now the locally-verified build itself. It contains the v2 agent
+security fabric's source and tests, and the `docs/` directory carries its own record — test
+matrix, invariant list, phase report, threat model, the machine-readable state file, and the
+waiver that is still unsigned. The previous Stage 3 engineering tree is unchanged at
+[tag v1.1.0](https://github.com/kotobuki09/actantos-releases/tree/v1.1.0). Nothing here alters
+the v1.0.0 public claim baseline.
 
-What that evidence currently says about itself, stated exactly as the documents state it:
+What the fabric currently says about itself, stated exactly as the documents state it:
 
 - Fourteen invariants (S1–S14). Twelve are `HELD`; **S4 is `PARTIAL`**.
 - Locally verified on one host: 1007 unit tests, 915 passing, 0 failing, 92 skipped, plus 135
@@ -83,16 +85,27 @@ Your AI agent (Cursor, Claude, GPT, custom…)
 
 ---
 
-## What’s in v1.1.0 (Stage 3)
+## What’s in this tree (v1.1.0)
 
-- Multi-tenant foundation (required tenants, OIDC/service principals, RBAC, RLS)
-- Signed isolation contract + fail-closed gVisor/runsc provider
-- Short-lived AWS STS credential broker
-- Signed WORM-style evidence archives (Object Lock COMPLIANCE model)
-- Durable SIEM webhook + Splunk HEC connectors
-- Stage 3 capability ledger (`npm run stage3:validate`)
+The `quiet-open-core` v1.1.0 build, locally verified on one host:
+
+- Enforcement kernel (`actantosd`) — Fastify + Postgres, frozen `/v1` intercept API
+- v2 agent security fabric (`src/v2/`): fourteen invariants (S1–S14), delegation and
+  capability brokerage, hash-chained signed evidence — every control mutation-checked
+- Cedar policy bundles + risk rules; evaluator modes where production mode fails closed
+- Docker sandbox baseline; gVisor/runsc and Tetragon substrate tests are gated and measured
+- Pi adapter (`guarded_*` tools), SDK and dashboard packages (`packages/`)
+- Security bench (`security-bench/`): 26 attacks blocked, 2 controls, 0 prohibited external effects
+- Verification tooling: `npm run release:verify`, `npm run security:state`,
+  `npm run confidential:probe`, `npm run smoke:fresh-install`
+- Built npm artifact + checksummed manifest: `actantosd/artifacts/`
 
 The frozen `/v1` intercept API remains compatible. See `actantosd/docs/release-notes-v1.1.0.md`.
+
+The Stage 3 governed-enterprise-autonomy lineage (multi-tenant foundation, OIDC/service
+principals, RBAC + RLS, STS credential broker, WORM evidence archives, SIEM connectors) remains
+published unchanged at [tag v1.1.0](https://github.com/kotobuki09/actantos-releases/tree/v1.1.0).
+It is not the tree in this checkout.
 
 ## What’s in v1.0.1
 
@@ -154,13 +167,16 @@ Demo story (smoke): **allow → deny secret → approve push → kill switch →
 ```bash
 git clone https://github.com/kotobuki09/actantos-releases.git
 cd actantos-releases/actantosd
-npm run quickstart
+npm install
+npm test
 ```
 
-This one command installs dependencies, builds ActantOS, starts an isolated
-in-memory server, runs the complete simulated-agent allow/deny/approval/audit
-test, and shuts the server down. It works from PowerShell, Command Prompt, and
-Unix-like shells. A successful run ends with `0 failed`.
+The test suite runs the full unit suite; tests that need a local PostgreSQL or a Docker
+daemon skip themselves when those are absent. A run that ends with `0 failed` verifies
+everything that could run on that machine.
+
+The one-command portable quickstart (`npm run quickstart`) belongs to the previous lineage:
+check out tag `v1.0.1` and run it there.
 
 ### Persistent self-host setup
 
@@ -178,7 +194,8 @@ cd actantosd && npm install
 npm run demo -- --url http://localhost:3100
 ```
 
-Or download **`actantosd-1.0.1.tgz`** from the [v1.0.1 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1).
+Or download the built tarball from `actantosd/artifacts/npm/` in this tree, or
+**`actantosd-1.0.1.tgz`** from the [v1.0.1 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1).
 
 Daemon default port: **3100** (so it does not collide with a site on 3000).
 
@@ -186,7 +203,7 @@ Daemon default port: **3100** (so it does not collide with a site on 3000).
 
 ```bash
 cd actantosd
-npm run release:verify      # typecheck + tests + build + policy:regression
+npm run release:verify      # typecheck + tests + build + policy:regression + bench + state check
 npm run smoke:fresh-install # compose + full demo (35 checks)
 ```
 
@@ -224,7 +241,8 @@ Setup: [`actantosd/docs/mcp-gateway-stable.md`](actantosd/docs/mcp-gateway-stabl
 
 | Doc | Purpose |
 | --- | --- |
-| [v1.0.1 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.1) | Latest public artifacts & notes |
+| [v1.1.0 release](https://github.com/kotobuki09/actantos-releases/releases/tag/v1.1.0) | Release page (Stage 3 lineage, tagged) |
+| `actantosd/artifacts/` | This tree's built npm tarball + checksum manifest |
 | [Website /v1](https://actantos.io/v1) | Release story |
 | [API v1 contract](actantosd/docs/api-v1-contract.md) | Stable endpoints |
 | [Open-core surface](actantosd/docs/open-core-surface.md) | Free vs paid boundary |
@@ -234,7 +252,7 @@ Setup: [`actantosd/docs/mcp-gateway-stable.md`](actantosd/docs/mcp-gateway-stabl
 | [Security hardening](actantosd/docs/security-hardening.md) | Sandbox & fail-closed |
 | [Support runbook](actantosd/docs/support-runbook.md) | Ops recovery |
 | [Upgrade v0.7 → v1](actantosd/docs/upgrade-v0.7-to-v1.md) | Migration |
-| [Release notes v1.0.1](actantosd/docs/release-notes-v1.0.1.md) | Changelog for the latest tag |
+| [Release notes v1.1.0](actantosd/docs/release-notes-v1.1.0.md) | Changelog for the current tree |
 
 ---
 

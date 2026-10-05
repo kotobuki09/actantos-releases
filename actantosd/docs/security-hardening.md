@@ -36,9 +36,7 @@ The guarded Docker execution path currently enforces:
 - `--security-opt no-new-privileges`
 - `--memory 512m`
 - `--cpus 0.5`
-- `--pids-limit 64`
-- `--network none` by default, or `actantos_egress` for the explicit egress-proxy mode
-
+- `--network none` by default, or `actantos_egress` for the explicit egress network mode
 These invariants are exercised in `src/docker-executor.test.ts`.
 
 ## Audit-chain verification

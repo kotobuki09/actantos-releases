@@ -92,6 +92,9 @@ class ThrowingRiskEngine extends RiskEngine {
 }
 
 class ApprovalVerificationFailureRepository implements ToolCallRepository {
+  async leasePendingToolCalls(workerId: string, batchSize: number, leaseDurationMs: number): Promise<any[]> {
+    return []
+  }
   readonly #delegate: InMemoryToolCallRepository
 
   constructor(delegate: InMemoryToolCallRepository) {
@@ -152,6 +155,7 @@ test("fail-closed: risk evaluation failure denies instead of allowing after perm
     repository,
     hmacSecret: "test-secret",
     riskEngine: new ThrowingRiskEngine(),
+    cedarProvider: { evaluate: async () => ({ decision: "allow" }) } as any,
   })
 
   const response = await service.intercept(baseRequest())
@@ -164,7 +168,7 @@ test("fail-closed: risk evaluation failure denies instead of allowing after perm
 
 test("fail-closed: approval verification storage failure denies the resubmission", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ repository, hmacSecret: "test-secret", cedarProvider: { evaluate: async () => ({ decision: "allow" }) } as any })
 
   const firstDecision = await service.intercept(approvalRequest())
   assert.equal(firstDecision.decision, "approval_required")
@@ -177,6 +181,7 @@ test("fail-closed: approval verification storage failure denies the resubmission
   const failClosedService = createInterceptService({
     repository: new ApprovalVerificationFailureRepository(repository),
     hmacSecret: "test-secret",
+    cedarProvider: { evaluate: async () => ({ decision: "allow" }) } as any,
   })
 
   const response = await failClosedService.intercept({

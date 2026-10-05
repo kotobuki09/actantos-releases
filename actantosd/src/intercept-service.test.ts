@@ -1,3 +1,4 @@
+import { FakeCedarProvider } from "./fake-cedar-provider.ts";
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -53,7 +54,7 @@ const baseRequest = (): ToolCallInterceptionRequest => ({
 // T2: Credential path → deny
 test("T2: .env read → deny, policy_forbid.credential_path", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept({
     ...baseRequest(),
@@ -80,7 +81,7 @@ test("T2: .env read → deny, policy_forbid.credential_path", async () => {
 // T6: Idempotency
 test("T6: same request_id retry → same decision, no new DB row", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
   const request = baseRequest()
 
   const first = await service.intercept(request)
@@ -93,7 +94,7 @@ test("T6: same request_id retry → same decision, no new DB row", async () => {
 // T1: Safe read → allow with decision_token
 test("T1: README.md read → allow, reason_code=allowed, decision_token issued", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept(baseRequest())
 
@@ -133,7 +134,7 @@ test("T1: README.md read → allow, reason_code=allowed, decision_token issued",
 // T12: dry_run on policy_forbid → deny, decision_mode=dry_run, no token
 test("T12: dry_run=true on credential path → deny, decision_mode=dry_run, no decision_token", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept({
     ...baseRequest(),
@@ -159,7 +160,7 @@ test("T12: dry_run=true on credential path → deny, decision_mode=dry_run, no d
 
 test("dry_run preserves approval_required decisions without issuing execution authorization", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept({
     ...baseRequest(),
@@ -195,7 +196,7 @@ test("dry_run preserves approval_required decisions without issuing execution au
 // T7: git push → approval_required
 test("T7: git push --dry-run → approval_required", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept({
     ...baseRequest(),
@@ -229,7 +230,7 @@ test("T7: git push --dry-run → approval_required", async () => {
 // T8: approve + new request_id → allow, used_at set
 test("T8: approve + NEW request_id → allow, used_at set", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   // First: get approval_required
   const firstReq: ToolCallInterceptionRequest = {
@@ -289,7 +290,7 @@ test("T8: approve + NEW request_id → allow, used_at set", async () => {
 
 test("dry_run approval resubmission verifies without consuming the approval token", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const firstRequest: ToolCallInterceptionRequest = {
     ...baseRequest(),
@@ -339,7 +340,7 @@ test("dry_run approval resubmission verifies without consuming the approval toke
 // T9: same approval_token reused → deny, invalid_approval
 test("T9: same approval_token reused → deny, reason_code=invalid_approval", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const firstReq: ToolCallInterceptionRequest = {
     ...baseRequest(),
@@ -396,7 +397,7 @@ test("T9: same approval_token reused → deny, reason_code=invalid_approval", as
 test("T10: kill switch active → deny, reason_code=kill_switch_active", async () => {
   const repository = new InMemoryToolCallRepository()
   repository.enableKillSwitch()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept({
     ...baseRequest(),
@@ -420,7 +421,7 @@ test("Given an MCP manifest drift check failure when intercepting Then it denies
       }
     },
   }
-  const service = createInterceptService({
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(),
     repository,
     hmacSecret: "test-secret",
     mcpManifestGuard,
@@ -457,7 +458,7 @@ test("Given an MCP manifest drift check failure when intercepting Then it denies
 
 test("Given a localhost URL target when intercepting Then it denies before policy evaluation", async () => {
   const repository = new InMemoryToolCallRepository()
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
 
   const response = await service.intercept({
     ...baseRequest(),

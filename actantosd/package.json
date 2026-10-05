@@ -3,9 +3,9 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "ActantOS enforcement kernel and governed enterprise autonomy control plane",
+  "description": "ActantOS enforcement kernel prototype",
   "actantos": {
-    "stage": "stage3-governed-enterprise-autonomy",
+    "stage": "quiet-open-core",
     "releaseNotesFile": "docs/release-notes-v1.1.0.md"
   },
   "scripts": {
@@ -18,25 +18,36 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "demo": "tsx demo.ts",
-    "quickstart": "node scripts/quickstart.mjs",
+    "demo:v2": "node --experimental-strip-types src/cli-demo-v2.ts",
+    "bench:v2": "node --experimental-strip-types src/cli-bench-v2.ts",
+    "evidence:verify": "node --experimental-strip-types src/cli-verify-evidence.ts",
     "smoke:fresh-install": "node scripts/fresh-install-smoke.mjs",
-    "stage3:preflight": "node scripts/stage3-preflight.mjs --mode=offline",
-    "stage3:preflight:optional": "node scripts/stage3-preflight.mjs --mode=optional",
-    "stage3:preflight:required": "node scripts/stage3-preflight.mjs --mode=required",
-    "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression",
+    "release:verify": "npm run typecheck && npm test && npm run build && npm run policy:regression && npm run bench && npm run security:state:check",
+    "bench": "node --experimental-strip-types ../security-bench/src/bench.ts",
     "release:artifacts": "node scripts/build-release-artifacts.mjs",
-    "stage3:validate": "node scripts/validate-stage3-ledger.mjs stage3-capabilities.json"
+    "audit:verify": "tsx src/cli-audit-verifier.ts",
+    "preflight": "tsx src/cli-preflight.ts",
+    "tetragon:emit": "node --experimental-strip-types src/cli-emit-tetragon.ts",
+    "security:state": "node scripts/generate-security-fabric-state.mjs",
+    "security:state:check": "node scripts/generate-security-fabric-state.mjs --check",
+    "confidential:probe": "node scripts/confidential-computing-capability.mjs",
+    "test:substrate": "node scripts/run-substrate-tests.mjs"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.1",
+    "@fastify/session": "^11.1.1",
+    "@fastify/static": "^10.1.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "fastify": "^5.6.1",
     "kysely": "^0.28.8",
+    "openid-client": "^5.7.1",
     "pg": "^8.16.3",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",
+    "fast-check": "^4.10.2",
     "pg-mem": "^3.0.5",
     "tsx": "^4.20.6",
     "typescript": "^5.9.2"

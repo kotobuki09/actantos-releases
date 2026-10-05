@@ -4,19 +4,16 @@ import type { FastifyInstance, FastifyReply } from "fastify"
 import { z, ZodError } from "zod"
 
 import type { CedarPolicyValidator } from "./cedar-provider.ts"
-import { toolCallInterceptionRequestSchema } from "./contracts.ts"
 import type { Database } from "./database.ts"
-import type { CedarProvider } from "./fake-cedar-provider.ts"
 import { sha256 } from "./hash.ts"
-import { runPolicyBundleDryRun } from "./policy-bundle-test.ts"
 import { registerPolicyDashboardRoutes } from "./policy-dashboard-routes.ts"
 
 const policyBundlesQuerySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
 })
 
 const createPolicyBundleBodySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
   version: z.string().min(1),
   engine: z.literal("cedar").optional().default("cedar"),
   source_text: z.string().min(1),
@@ -49,16 +46,12 @@ const serializePolicyBundle = (row: PolicyBundleRow) => ({
   source_text: row.source_text,
 })
 
-const policyBundleTestBodySchema = z.object({
-  request: toolCallInterceptionRequestSchema,
-})
-
 export const registerPolicyBundleRoutes = (
   server: FastifyInstance,
   options: {
     readonly database: Database
     readonly policyValidator: CedarPolicyValidator
-    readonly cedarProvider?: CedarProvider
+    readonly cedarProvider: { reloadPolicy?(newPolicyContent: string): void }
   },
 ): void => {
   registerPolicyDashboardRoutes(server, { database: options.database })
@@ -129,6 +122,10 @@ export const registerPolicyBundleRoutes = (
     const activatedPolicyBundle = activatedRows[0]
     if (activatedPolicyBundle === undefined) {
       throw new Error("policy bundle activation returned no row")
+    }
+
+    if (options.cedarProvider.reloadPolicy) {
+      options.cedarProvider.reloadPolicy(activatedPolicyBundle.source_text)
     }
 
     return reply.code(200).send({ policy_bundle: serializePolicyBundle(activatedPolicyBundle) })
@@ -260,6 +257,10 @@ export const registerPolicyBundleRoutes = (
         throw new Error("policy bundle insert returned no row")
       }
 
+      if (body.active && options.cedarProvider.reloadPolicy) {
+        options.cedarProvider.reloadPolicy(policyBundle.source_text)
+      }
+
       return reply.code(201).send({ policy_bundle: serializePolicyBundle(policyBundle) })
     } catch (error) {
       if (error instanceof ZodError) {
@@ -272,64 +273,5 @@ export const registerPolicyBundleRoutes = (
   server.post<{ Params: { id: string } }>(
     "/v1/policy-bundles/:id/activate",
     async (request, reply) => activatePolicyBundle(request.params.id, reply),
-  )
-
-  server.post<{ Params: { id: string } }>(
-    "/v1/policy-bundles/:id/test",
-    async (request, reply) => {
-      try {
-        const body = policyBundleTestBodySchema.parse(request.body)
-        const rows = await options.database.query<PolicyBundleRow>(
-          `
-            SELECT id,
-                   tenant_id,
-                   version,
-                   engine,
-                   source_hash,
-                   source_text,
-                   active,
-                   created_at
-            FROM policy_bundles
-            WHERE id = $1
-          `,
-          [request.params.id],
-        )
-
-        const policyBundle = rows[0]
-        if (policyBundle === undefined) {
-          return reply.code(404).send({ error: "not_found", message: "policy bundle not found" })
-        }
-
-        const validation = await options.policyValidator(policyBundle.source_text)
-        if (!validation.ok) {
-          return reply.code(400).send({
-            error: "invalid_policy_bundle",
-            message: "policy bundle source failed Cedar syntax validation",
-            detail: validation.message,
-          })
-        }
-
-        const result = await runPolicyBundleDryRun({
-          bundle: {
-            id: policyBundle.id,
-            version: policyBundle.version,
-            tenant_id: policyBundle.tenant_id,
-            source_text: policyBundle.source_text,
-          },
-          request: body.request,
-          ...(options.cedarProvider === undefined ? {} : { cedarProvider: options.cedarProvider }),
-        })
-
-        return reply.code(200).send({
-          ...result,
-          dry_run: true,
-        })
-      } catch (error) {
-        if (error instanceof ZodError) {
-          return reply.code(400).send({ error: "invalid_request", issues: error.issues })
-        }
-        throw error
-      }
-    },
   )
 }

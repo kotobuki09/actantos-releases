@@ -1,62 +1,24 @@
+import { FakeCedarProvider } from "./fake-cedar-provider.ts";
 import assert from "node:assert/strict"
 import test from "node:test"
 
 import { newDb } from "pg-mem"
 
 import { verifyTenantAuditChain } from "./audit-chain-verifier.ts"
+import { approvedWorkspaceShellRequest } from "./fake-cedar-fixtures.ts"
 import type { ToolCallInterceptionRequest } from "./contracts.ts"
-import { migrateDatabaseForUnitTests, seedDemoData, type Database } from "./database.ts"
+import { migrateDatabase, seedDemoData, type Database } from "./database.ts"
 import { createInterceptService } from "./intercept-service.ts"
 import { recordToolResult } from "./tool-result-service.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
 
-const baseShellRequest = (): ToolCallInterceptionRequest => ({
-  request_id: "req_audit_verifier_0001",
-  tenant_id: "t_demo",
-  agent: {
-    id: "pi_demo",
-    runtime_type: "pi",
-    environment: "dev",
-    risk_tier: "low",
-  },
-  subject: {
-    user_id: "u_demo",
-    role: "developer",
-  },
-  session: {
-    id: "s_demo",
-    cwd: "/workspace",
-    budget_remaining_cents: 10_000,
-  },
-  tool: {
-    kind: "shell",
-    name: "guarded_bash",
-    operation: "ExecuteShellCommand",
-    schema_hash: "",
-  },
-  resource: {
-    id: "/workspace",
-    kind: "workspace",
-    path: "/workspace",
-  },
-  action: {
-    operation: "ExecuteShellCommand",
-    args: {
-      command: "printf hello",
-      argv: ["printf", "hello"],
-    },
-  },
-  normalized: {
-    verb: "execute",
-    mutation: false,
-    destructive: false,
-    network: false,
-    credential_access: false,
-    risk_class: "low",
-    command_family: "printf",
-    subcommand: "hello",
-  },
-})
+// The fixture now lives in one place. It used to be duplicated here and in
+// tool-result-service.test.ts, and the duplication is what hid the defect described in
+// ./fake-cedar-fixtures.ts: both copies asserted an "allow" the shipped policy denies, and
+// FakeCedarProvider permitted them anyway. cedar-fixture-parity.test.ts evaluates the shared
+// object against the real cedar CLI, so deleting host_workspace_path now fails by name.
+const baseShellRequest = (): ToolCallInterceptionRequest =>
+  approvedWorkspaceShellRequest("req_audit_verifier_0001")
 
 const createTestDatabase = async (): Promise<Database> => {
   const memoryDb = newDb()
@@ -66,6 +28,7 @@ const createTestDatabase = async (): Promise<Database> => {
 
   const database: Database = {
     async query(sql, params = []) {
+      if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
       const result = await pool.query(sql, [...params])
       return result.rows
     },
@@ -76,6 +39,7 @@ const createTestDatabase = async (): Promise<Database> => {
         await client.query("BEGIN")
         const result = await callback({
           async query(sql, params = []) {
+            if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
             const queryResult = await client.query(sql, [...params])
             return queryResult.rows
           },
@@ -94,7 +58,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabaseForUnitTests(database)
+  await migrateDatabase(database)
   await seedDemoData(database)
 
   return database
@@ -102,7 +66,7 @@ const createTestDatabase = async (): Promise<Database> => {
 
 const createRecordedAuditChain = async (database: Database): Promise<void> => {
   const repository = new PostgresToolCallRepository(database)
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
   const request = baseShellRequest()
   const decision = await service.intercept(request)
 

@@ -108,9 +108,44 @@ const toGatewayRiskTier = (value: string | undefined): GatewayRequestContext["ri
   return "low"
 }
 
-export const createGatewayRequestContext = (request: FastifyRequest): GatewayRequestContext => {
-  const purposeHeader = request.headers["x-actantos-purpose"]
+/**
+ * Extracts the gateway request context from request headers.
+ *
+ * Security note: header-supplied tenant/agent/user identity is ADVISORY unless the
+ * caller is already authenticated (API key validated upstream) OR the operator has
+ * explicitly opted in via ACTANTOS_TRUST_MCP_CONTEXT=true.
+ *
+ * When neither condition is met, the context is locked to the defaults defined in
+ * DEFAULT_GATEWAY_CONTEXT so that an unauthenticated caller cannot forge a tenant ID.
+ */
+export const createGatewayRequestContext = (
+  request: FastifyRequest,
+  authenticated = false,
+): GatewayRequestContext => {
+  const trustHeaders =
+    authenticated ||
+    process.env["ACTANTOS_TRUST_MCP_CONTEXT"] === "true"
 
+  if (!trustHeaders) {
+    // Unauthenticated: ignore identity headers to prevent tenant spoofing.
+    // Metadata headers (runtime-type, environment, risk-tier, cwd, purpose) are still
+    // accepted as they do not affect authorization identity.
+    const purposeHeader = request.headers["x-actantos-purpose"]
+    return {
+      ...DEFAULT_GATEWAY_CONTEXT,
+      runtimeType: toGatewayRuntimeType(
+        request.headers["x-actantos-runtime-type"] as string | undefined,
+      ),
+      environment: toGatewayEnvironment(
+        request.headers["x-actantos-environment"] as string | undefined,
+      ),
+      riskTier: toGatewayRiskTier(request.headers["x-actantos-risk-tier"] as string | undefined),
+      cwd: String(request.headers["x-actantos-cwd"] ?? DEFAULT_GATEWAY_CONTEXT.cwd),
+      ...(purposeHeader === undefined ? {} : { purpose: String(purposeHeader) }),
+    }
+  }
+
+  const purposeHeader = request.headers["x-actantos-purpose"]
   return {
     tenantId: String(request.headers["x-actantos-tenant-id"] ?? DEFAULT_GATEWAY_CONTEXT.tenantId),
     agentId: String(request.headers["x-actantos-agent-id"] ?? DEFAULT_GATEWAY_CONTEXT.agentId),
@@ -541,14 +576,36 @@ const createToolResultRecorder = (server: FastifyInstance): ToolResultRecorder =
   }
 }
 
-export function registerMcpGateway(server: FastifyInstance, interceptService?: InterceptService) {
+export function registerMcpGateway(
+  server: FastifyInstance,
+  interceptService?: InterceptService,
+  options: { readonly apiKey?: string } = {},
+) {
   const sessions = new Map<string, GatewaySession>()
   const gatewayConfig = getGatewayConfig()
 
   server.get("/v1/mcp/sse", async (request, reply) => {
     const transport = new SSEServerTransport("/v1/mcp/message", reply.raw)
     const sessionId = transport.sessionId
-    const context = createGatewayRequestContext(request)
+    const authenticated =
+      options.apiKey !== undefined &&
+      request.headers["x-actantos-api-key"] === options.apiKey
+
+    // PQ-11 / 1.3: Reject requests that supply identity headers (tenant/agent) without
+    // a valid bearer token or API key. Silently defaulting would allow tenant-id spoofing.
+    const trustMcpContext = process.env["ACTANTOS_TRUST_MCP_CONTEXT"] === "true"
+    const hasIdentityHeaders =
+      request.headers["x-actantos-tenant-id"] !== undefined ||
+      request.headers["x-actantos-agent-id"] !== undefined
+    if (hasIdentityHeaders && !authenticated && !trustMcpContext) {
+      return reply.code(401).send({
+        error: "unauthorized",
+        message:
+          "X-Actantos-Tenant-Id / X-Actantos-Agent-Id headers require a valid API key or bearer token",
+      })
+    }
+
+    const context = createGatewayRequestContext(request, authenticated)
     const mcpServer = new Server(
       {
         name: "actantos-gateway",

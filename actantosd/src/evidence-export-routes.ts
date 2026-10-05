@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto"
 import type { FastifyInstance } from "fastify"
 import { z, ZodError } from "zod"
 
@@ -8,12 +9,13 @@ import { listSessionEvents } from "./session-events.ts"
 import { listSessions } from "./sessions-routes.ts"
 
 const evidenceExportQuerySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
   session_id: z.string().min(1).optional(),
 })
 
 type RegisterEvidenceExportRoutesOptions = {
   readonly database?: Database
+  readonly hmacSecret?: string
 }
 
 type ApprovalExportRow = {
@@ -188,10 +190,23 @@ export const registerEvidenceExportRoutes = (
         ? `actantos-evidence-${query.tenant_id}.json`
         : `actantos-evidence-${query.tenant_id}-${query.session_id}.json`
 
+      let signedPackage: any = { ...evidencePackage }
+      if (options.hmacSecret !== undefined) {
+        const jsonString = JSON.stringify(evidencePackage)
+        const signature = createHmac("sha256", options.hmacSecret)
+          .update(jsonString)
+          .digest("hex")
+        signedPackage = {
+          ...evidencePackage,
+          signature,
+        }
+        reply.header("X-Actantos-Signature", signature)
+      }
+
       return reply
         .header("content-disposition", `attachment; filename="${filename}"`)
         .code(200)
-        .send(evidencePackage)
+        .send(signedPackage)
     } catch (error) {
       if (error instanceof ZodError) {
         return reply.code(400).send({ error: "invalid_request", issues: error.issues })

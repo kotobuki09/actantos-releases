@@ -31,11 +31,33 @@ if (!existsSync(manifestPath)) {
 }
 
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"))
-if (manifest.release_version !== "v1.0.0" && !String(manifest.release_version || "").startsWith("v")) {
+if (!String(manifest.release_version || "").startsWith("v")) {
   fail(`unexpected release_version: ${manifest.release_version}`)
 }
 if (!manifest.stage) {
   fail("manifest.stage missing")
+}
+
+// When Mode A truth source is present next to artifacts parent (actantosd root), enforce identity.
+const truthCandidates = [
+  path.join(assetsDir, "release-maturity-truth.json"),
+  path.join(assetsDir, "..", "release-maturity-truth.json"),
+]
+for (const truthPath of truthCandidates) {
+  if (!existsSync(truthPath)) continue
+  const truth = JSON.parse(readFileSync(truthPath, "utf8"))
+  if (manifest.release_version !== truth.release_tag) {
+    fail(
+      `manifest release_version ${manifest.release_version} drifts from truth release_tag ${truth.release_tag} (${truthPath})`,
+    )
+  }
+  if (manifest.stage !== truth.maturity_label) {
+    fail(
+      `manifest stage ${manifest.stage} drifts from truth maturity_label ${truth.maturity_label} (${truthPath})`,
+    )
+  }
+  console.log(`OK truth: ${path.basename(truthPath)} identity matches manifest`)
+  break
 }
 
 const expectedTarballRel = manifest.npm_package?.file
@@ -45,9 +67,16 @@ if (!expectedTarballRel || !expectedTarballHash) {
 }
 
 const tarballName = path.basename(expectedTarballRel)
-const tarballPath = path.join(assetsDir, tarballName)
-if (!existsSync(tarballPath)) {
-  fail(`tarball missing: ${tarballName}`)
+// Support both repo layout (artifacts/npm/*.tgz) and flat GitHub-asset dirs.
+const nestedTarballPath = path.join(assetsDir, expectedTarballRel)
+const flatTarballPath = path.join(assetsDir, tarballName)
+const tarballPath = existsSync(nestedTarballPath)
+  ? nestedTarballPath
+  : existsSync(flatTarballPath)
+    ? flatTarballPath
+    : null
+if (!tarballPath) {
+  fail(`tarball missing: tried ${expectedTarballRel} and ${tarballName} under ${assetsDir}`)
 }
 
 const actual = sha256File(tarballPath)

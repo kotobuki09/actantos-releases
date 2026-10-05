@@ -1,9 +1,19 @@
 {
-  "name": "pi-adapter",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@actantos/pi-adapter",
+  "version": "1.0.0",
   "type": "module",
-  "description": "ActantOS Pi adapter package",
+  "description": "ActantOS Pi runtime adapter",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "node --experimental-strip-types --test src/**/*.test.ts",
     "typecheck": "tsc --noEmit",

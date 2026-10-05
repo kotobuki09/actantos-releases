@@ -1,17 +1,17 @@
 {
-  "release_version": "v1.0.1",
+  "release_version": "v1.1.0",
   "stage": "quiet-open-core",
-  "generated_at": "2026-07-12T13:47:49.569Z",
+  "generated_at": "2026-10-05T16:15:49.886Z",
   "npm_package": {
-    "file": "npm/actantosd-1.0.1.tgz",
-    "sha256": "8231d796402799ca3474138236b86b937b4261f6509003709909c80a5ee7ddee"
+    "file": "npm/actantosd-1.1.0.tgz",
+    "sha256": "2750905de58b9a9142ed69ab84d7ab843338ddd64bec8d91e6a94725eb466c27"
   },
   "docker_image": {
-    "image": "actantosd:v1.0.1",
-    "build_command": "docker build -t actantosd:v1.0.1 ."
+    "image": "actantosd:v1.1.0",
+    "build_command": "docker build -t actantosd:v1.1.0 ."
   },
   "github_release": {
-    "tag": "v1.0.1",
-    "notes_file": "docs/release-notes-v1.0.1.md"
+    "tag": "v1.1.0",
+    "notes_file": "docs/release-notes-v1.1.0.md"
   }
 }

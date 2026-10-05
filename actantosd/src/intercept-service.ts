@@ -7,7 +7,7 @@ import {
   toolCallInterceptionRequestSchema,
 } from "./contracts.ts"
 import { AllowAllBudgetProvider, type BudgetProvider } from "./budget-provider.ts"
-import { type CedarProvider, FakeCedarProvider } from "./fake-cedar-provider.ts"
+import { type CedarProvider } from "./fake-cedar-provider.ts"
 import { createDecisionConstraints } from "./decision-constraints.ts"
 import {
   createAllowResponse,
@@ -23,17 +23,50 @@ import { AllowAllRateLimitProvider, type RateLimitProvider } from "./rate-limit-
 import { RiskEngine } from "./risk-engine.ts"
 import type { ToolCallRepository } from "./tool-call-repository.ts"
 import { DefaultUrlTargetGuard, type UrlTargetGuard } from "./url-target-guard.ts"
+import type { Database, DatabaseClient } from "./database.ts"
+import {
+  createFabricGate,
+  fabricDenial,
+  toFabricActionRequest,
+  type FabricGate,
+} from "./v2/fabric.ts"
+import {
+  DEFAULT_EGRESS_CELL_MODE,
+  EGRESS_BROKER_REQUIRED,
+  egressCellTopology,
+  type EgressCellMode,
+} from "./v2/egress-cell.ts"
 
 type InterceptServiceDependencies = {
   readonly repository: ToolCallRepository
   readonly hmacSecret: string
-  readonly cedarProvider?: CedarProvider
+  readonly cedarProvider: CedarProvider
   readonly riskEngine?: RiskEngine
   readonly budgetProvider?: BudgetProvider
   readonly rateLimitProvider?: RateLimitProvider
   readonly mcpManifestGuard?: McpManifestGuard
   readonly urlTargetGuard?: UrlTargetGuard
   readonly auditEventIdFactory?: () => string
+  readonly database?: Database
+  /**
+   * The v2 security fabric. Optional so that every existing construction site keeps working
+   * unchanged; when absent the fabric is not consulted, which is the `v1_compat` behaviour.
+   */
+  readonly fabricGate?: FabricGate
+  /**
+   * The operator's egress cell mode. Defaults to `none`, which is the v1 behaviour: the workload
+   * gets no network and nothing about the decision path changes.
+   */
+  readonly egressCellMode?: EgressCellMode
+  /**
+   * Signs decision tokens. Absent means HMAC with `hmacSecret`, which is the existing behaviour and
+   * remains the default so that no deployment changes scheme without asking.
+   *
+   * Configuring an Ed25519 signer is what makes a decision token executable: the executor refuses
+   * HMAC tokens precisely because a party that can verify HMAC can also mint, and the executor must
+   * not be able to authorize itself.
+   */
+  readonly decisionTokenSigner?: (payload: string) => string
 }
 
 type InterceptService = {
@@ -45,7 +78,7 @@ type InterceptService = {
 export const createInterceptService = (
   dependencies: InterceptServiceDependencies,
 ): InterceptService => {
-  const cedarProvider = dependencies.cedarProvider ?? new FakeCedarProvider()
+  const cedarProvider = dependencies.cedarProvider
   const riskEngine = dependencies.riskEngine ?? new RiskEngine({
     database: undefined,
     rulesPath: undefined,
@@ -55,6 +88,8 @@ export const createInterceptService = (
   const mcpManifestGuard =
     dependencies.mcpManifestGuard ?? new AllowAllMcpManifestGuard()
   const urlTargetGuard = dependencies.urlTargetGuard ?? new DefaultUrlTargetGuard()
+  const fabricGate = dependencies.fabricGate
+  const egressCellMode = dependencies.egressCellMode ?? DEFAULT_EGRESS_CELL_MODE
   const createAuditEventId = dependencies.auditEventIdFactory ?? randomUUID
   const decisionTokenTtlSeconds = 10 * 60
 
@@ -65,24 +100,26 @@ export const createInterceptService = (
       const parsedRequest = toolCallInterceptionRequestSchema.parse(request)
       const context = createToolCallContext(parsedRequest)
       const decisionMode = parsedRequest.dry_run ? "dry_run" : "enforce"
-      const failClosed = (options: {
-        readonly reason: string
-        readonly reasonCode: string
-        readonly riskClass: string
-        readonly priorDecisionId?: string
-      }) =>
-        persistFailClosedDecision({
-          repository: dependencies.repository,
-          request: parsedRequest,
-          context,
-          decisionMode,
-          reason: options.reason,
-          reasonCode: options.reasonCode,
-          riskClass: options.riskClass,
-          ...(options.priorDecisionId === undefined
-            ? {}
-            : { priorDecisionId: options.priorDecisionId }),
-        })
+
+      const executeLogic = async (client?: DatabaseClient): Promise<ToolCallInterceptionResponse> => {
+        const failClosed = (options: {
+          readonly reason: string
+          readonly reasonCode: string
+          readonly riskClass: string
+          readonly priorDecisionId?: string
+        }) =>
+          persistFailClosedDecision({
+            repository: dependencies.repository,
+            request: parsedRequest,
+            context,
+            decisionMode,
+            reason: options.reason,
+            reasonCode: options.reasonCode,
+            riskClass: options.riskClass,
+            ...(options.priorDecisionId === undefined
+              ? {}
+              : { priorDecisionId: options.priorDecisionId }),
+          }, client)
 
       // Step 0: Idempotency — return existing decision if request_id already exists
       let existingDecision
@@ -90,6 +127,7 @@ export const createInterceptService = (
         existingDecision = await dependencies.repository.findByRequestId(
           parsedRequest.tenant_id,
           parsedRequest.request_id,
+          client,
         )
       } catch {
         return failClosed({
@@ -111,6 +149,7 @@ export const createInterceptService = (
           parsedRequest.agent.id,
           parsedRequest.session.id,
           parsedRequest.tool.name,
+          client,
         )
       } catch {
         return failClosed({
@@ -133,9 +172,9 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "forbid",
+          cedarResult: { decision: "forbid" },
           riskClass: "low",
-        })
+        }, client)
         return response
       }
 
@@ -147,7 +186,7 @@ export const createInterceptService = (
           sessionId: parsedRequest.session.id,
           toolName: parsedRequest.tool.name,
           consume: !parsedRequest.dry_run,
-        })
+        }, client)
       } catch {
         return failClosed({
           reason: "budget verification failed; denying fail-closed",
@@ -169,9 +208,9 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "forbid",
+          cedarResult: { decision: "forbid" },
           riskClass: "low",
-        })
+        }, client)
         return response
       }
 
@@ -199,9 +238,9 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "forbid",
+          cedarResult: { decision: "forbid" },
           riskClass: "low",
-        })
+        }, client)
         return response
       }
 
@@ -229,9 +268,75 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "forbid",
+          cedarResult: { decision: "forbid" },
           riskClass: "high",
+        }, client)
+        return response
+      }
+
+      // The v2 security fabric. Placed after every v1 guard and before authorization so that it
+      // sees the same request the rest of the pipeline sees, and so a fabric denial is recorded
+      // as itself rather than as a downstream symptom.
+      //
+      // In observe mode this runs and its verdict is recorded but changes nothing; in enforce
+      // mode a denial — or an unreachable fabric — stops the request here. `fabricDenial` is
+      // the only thing that can turn an assessment into a denial, so the observe-mode guarantee
+      // cannot be undone by a caller that forgets to check the mode.
+      if (fabricGate?.evaluates === true) {
+        const assessment = await fabricGate.evaluate(
+          toFabricActionRequest(parsedRequest),
+        )
+        const denial = fabricDenial(assessment)
+
+        if (denial !== null) {
+          const decisionId = randomUUID()
+          const response = createDenyResponse({
+            decisionId,
+            decisionMode,
+            reason: denial.reason,
+            reasonCode: denial.reasonCode,
+            auditEventId: createAuditEventId(),
+          })
+          await dependencies.repository.saveDecision({
+            request: parsedRequest,
+            response,
+            context,
+            cedarResult: { decision: "forbid" },
+            riskClass: "high",
+          }, client)
+          return response
+        }
+      }
+
+      // Controlled egress cell, `broker_only` mode (S2).
+      //
+      // Under `broker_only` the workload has no network, exactly as under `none`. The difference is
+      // that here the agent is told so, at decision time, with a reason code an operator can count.
+      // Under `none` the same call is also impossible, but it fails later as `ENETUNREACH` inside
+      // the workload — invisible to the operator and indistinguishable from a bug.
+      //
+      // The check sits here, after the fabric gate and before any allow path can produce
+      // constraints, because a network grant produced by either allow path would otherwise be the
+      // way this mode quietly stopped meaning anything.
+      if (egressCellTopology(egressCellMode).brokerRequired && context.normalized.network === true) {
+        const decisionId = randomUUID()
+        const response = createDenyResponse({
+          decisionId,
+          decisionMode,
+          reason:
+            "this deployment runs its egress cell in broker_only mode: the workload has no network, " +
+            "and this call needs one. Route it through the capability broker instead of executing " +
+            "it inside the workload.",
+          reasonCode: EGRESS_BROKER_REQUIRED,
+          auditEventId: createAuditEventId(),
         })
+        await dependencies.repository.saveDecision({
+          request: parsedRequest,
+          response,
+          context,
+          cedarResult: { decision: "forbid" },
+          riskClass: "high",
+        }, client)
         return response
       }
 
@@ -244,7 +349,7 @@ export const createInterceptService = (
             reason: "risk evaluation failed; denying fail-closed",
             reasonCode: "dependency_failure.risk_evaluation",
             riskClass: parsedRequest.normalized.risk_class ?? "high",
-            priorDecisionId: parsedRequest.authorization.prior_decision_id,
+            priorDecisionId: parsedRequest.authorization?.prior_decision_id,
           })
         }
         const { prior_decision_id, approval_id, approval_token } = parsedRequest.authorization
@@ -257,7 +362,7 @@ export const createInterceptService = (
             scopeHash: context.scope_hash,
             requestId: parsedRequest.request_id,
             consume: !parsedRequest.dry_run,
-          })
+          }, client)
         } catch {
           return failClosed({
             reason: "approval verification failed; denying fail-closed",
@@ -280,10 +385,10 @@ export const createInterceptService = (
             request: parsedRequest,
             response,
             context,
-            cedarResult: "permit",
+            cedarResult: { decision: "permit" },
             riskClass: risk.risk_class,
             priorDecisionId: prior_decision_id,
-          })
+          }, client)
         return response
       }
 
@@ -294,7 +399,7 @@ export const createInterceptService = (
         toolName: parsedRequest.tool.name,
         risk,
         consume: !parsedRequest.dry_run,
-      })
+      }, client)
 
       if (!rateLimit.allowed) {
         const decisionId = randomUUID()
@@ -309,10 +414,10 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "permit",
+          cedarResult: { decision: "permit" },
           riskClass: risk.risk_class,
           priorDecisionId: prior_decision_id,
-        })
+        }, client)
         return response
       }
 
@@ -329,10 +434,10 @@ export const createInterceptService = (
             request: parsedRequest,
             response,
             context,
-            cedarResult: "permit",
+            cedarResult: { decision: "permit" },
             riskClass: risk.risk_class,
             priorDecisionId: prior_decision_id,
-          })
+          }, client)
           return response
         }
 
@@ -347,6 +452,9 @@ export const createInterceptService = (
           constraints,
           expiresAtEpochSeconds: Math.floor(Date.now() / 1_000) + decisionTokenTtlSeconds,
           hmacSecret: dependencies.hmacSecret,
+          ...(dependencies.decisionTokenSigner === undefined
+            ? {}
+            : { sign: dependencies.decisionTokenSigner }),
           approved: true,
         })
 
@@ -364,11 +472,11 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "permit",
+          cedarResult: { decision: "permit" },
           riskClass: risk.risk_class,
           priorDecisionId: prior_decision_id,
           approvalConsumed: true,
-        })
+        }, client)
         return response
       }
 
@@ -384,8 +492,8 @@ export const createInterceptService = (
         })
       }
 
-      if (cedarDecision === "forbid") {
-        const reasonCode = mapForbidReason(context)
+      if (cedarDecision.decision === "forbid") {
+        const reasonCode = cedarDecision.reasonCode ?? mapForbidReason(context)
         const decisionId = randomUUID()
         const response = createDenyResponse({
           decisionId,
@@ -398,7 +506,7 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "forbid",
+          cedarResult: { decision: "forbid" },
           riskClass: context.normalized.credential_access ? "critical" : "low",
         })
         return response
@@ -447,9 +555,9 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "permit",
+          cedarResult: { decision: "permit" },
           riskClass: risk.risk_class,
-        })
+        }, client)
         return response
       }
 
@@ -469,9 +577,9 @@ export const createInterceptService = (
             request: parsedRequest,
             response,
             context,
-            cedarResult: "permit",
+            cedarResult: { decision: "permit" },
             riskClass: risk.risk_class,
-          })
+          }, client)
           return response
         }
 
@@ -487,9 +595,9 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "permit",
+          cedarResult: { decision: "permit" },
           riskClass: risk.risk_class,
-        })
+        }, client)
         return response
       }
 
@@ -506,6 +614,9 @@ export const createInterceptService = (
           constraints,
           expiresAtEpochSeconds: Math.floor(Date.now() / 1_000) + decisionTokenTtlSeconds,
           hmacSecret: dependencies.hmacSecret,
+          ...(dependencies.decisionTokenSigner === undefined
+            ? {}
+            : { sign: dependencies.decisionTokenSigner }),
         })
 
         const response = createAllowResponse({
@@ -522,9 +633,9 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "permit",
+          cedarResult: { decision: "permit" },
           riskClass: risk.risk_class,
-        })
+        }, client)
         return response
       }
 
@@ -547,15 +658,21 @@ export const createInterceptService = (
           request: parsedRequest,
           response,
           context,
-          cedarResult: "permit",
+          cedarResult: { decision: "permit" },
           riskClass: risk.risk_class,
           approvalId,
           approvalExpiresAt: expiresAt,
-        })
+        }, client)
         return response
       }
 
       throw new Error("approval_required response must not include authorization")
-    },
-  }
+    }
+
+    if (dependencies.database !== undefined) {
+      return dependencies.database.transaction(executeLogic)
+    }
+    return executeLogic()
+  },
+}
 }

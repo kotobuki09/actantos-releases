@@ -175,7 +175,7 @@ export const executeInSandbox = (
     "--cpus", "0.5",
     "--pids-limit", "64",
     "--volume", `${options.workspaceMount}:/workspace`,
-    "--network", options.networkMode === "none" ? "none" : "bridge",
+    "--network", options.networkMode === "none" ? "none" : "actantos_egress",
     "actantos/sandbox:latest",
     ...argv,
   ]

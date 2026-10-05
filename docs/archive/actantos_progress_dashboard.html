@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ActantOS Week 1 Progress Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0d12;
+    --panel: #111722;
+    --panel2: #151d2a;
+    --text: #e9eef7;
+    --muted: #9aa7ba;
+    --border: #263245;
+    --good: #3ddc97;
+    --warn: #ffd166;
+    --bad: #ff6b6b;
+    --accent: #78a6ff;
+    --purple: #b197fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: radial-gradient(circle at top left, #14213a 0, var(--bg) 38%), var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 28px 28px 18px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(10, 13, 18, 0.92);
+    backdrop-filter: blur(16px);
+    z-index: 10;
+  }
+  h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -0.03em; }
+  h2 { margin: 30px 0 14px; font-size: 20px; letter-spacing: -0.02em; }
+  h3 { margin: 0; font-size: 16px; }
+  p { color: var(--muted); line-height: 1.55; }
+  .wrap { padding: 24px 28px 60px; max-width: 1440px; margin: 0 auto; }
+  .goal {
+    display: inline-flex; gap: 10px; align-items: center;
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: 999px;
+    color: var(--text); background: rgba(120, 166, 255, 0.09);
+    font-weight: 700;
+  }
+  .topgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+  .card { background: linear-gradient(180deg, var(--panel), #0f1520); border: 1px solid var(--border); border-radius: 18px; padding: 16px; box-shadow: 0 14px 50px rgba(0,0,0,.24); }
+  .metric { font-size: 34px; font-weight: 800; letter-spacing: -0.04em; margin: 8px 0 0; }
+  .label { color: var(--muted); font-size: 13px; }
+  .bar { height: 10px; background: #070a0f; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+  .fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--good)); transition: width .2s ease; }
+  .actions { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
+  button, .filelabel {
+    border: 1px solid var(--border); background: var(--panel2); color: var(--text);
+    border-radius: 12px; padding: 10px 12px; font-weight: 700; cursor: pointer;
+  }
+  button:hover, .filelabel:hover { border-color: var(--accent); }
+  input[type=file] { display: none; }
+  .gate { display: grid; grid-template-columns: 70px 1fr 160px; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--border); }
+  .badge { display: inline-flex; align-items: center; justify-content: center; min-width: 52px; padding: 6px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; border: 1px solid var(--border); color: var(--muted); }
+  .done, .pass { color: var(--good); border-color: rgba(61,220,151,.45); background: rgba(61,220,151,.08); }
+  .review, .running { color: var(--purple); border-color: rgba(177,151,252,.45); background: rgba(177,151,252,.08); }
+  .doing { color: var(--warn); border-color: rgba(255,209,102,.45); background: rgba(255,209,102,.08); }
+  .fail { color: var(--bad); border-color: rgba(255,107,107,.45); background: rgba(255,107,107,.08); }
+  .todo { color: var(--muted); }
+  select, textarea, input[type=text] {
+    width: 100%; background: #090d14; color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 10px; outline: none;
+  }
+  textarea { min-height: 58px; resize: vertical; }
+  .day-card { margin-bottom: 16px; }
+  .task { display: grid; grid-template-columns: 32px 1fr 130px 1.2fr; gap: 10px; align-items: start; padding: 12px 0; border-top: 1px solid var(--border); }
+  .task .idx { color: var(--muted); font-size: 12px; padding-top: 9px; }
+  .task-title { font-weight: 650; line-height: 1.4; }
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+  .testrow { display: grid; grid-template-columns: 70px 1fr 1.5fr 120px 1.2fr; gap: 10px; align-items: start; padding: 12px 0; border-top: 1px solid var(--border); }
+  .small { font-size: 12px; color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .footer { margin-top: 34px; color: var(--muted); font-size: 12px; }
+  @media (max-width: 980px) { .topgrid { grid-template-columns: 1fr; } .task, .testrow, .gate { grid-template-columns: 1fr; } header { position: static; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ActantOS Week 1 Progress Dashboard</h1>
+  <div class="goal">No agent action executes without an ActantOS decision.</div>
+  <div class="actions">
+    <button onclick="exportState()">Export progress JSON</button>
+    <label class="filelabel" for="importFile">Import progress JSON</label><input id="importFile" type="file" accept="application/json" onchange="importState(event)" />
+    <button onclick="resetState()">Reset local progress</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="topgrid">
+    <div class="card"><div class="label">Overall completion</div><div class="metric" id="overallPct">0%</div><div class="bar"><div id="overallBar" class="fill"></div></div></div>
+    <div class="card"><div class="label">Gates done</div><div class="metric" id="gatesDone">0/7</div><div class="bar"><div id="gatesBar" class="fill"></div></div></div>
+    <div class="card"><div class="label">Tasks done</div><div class="metric" id="tasksDone">0/0</div><div class="bar"><div id="tasksBar" class="fill"></div></div></div>
+    <div class="card"><div class="label">Tests passed</div><div class="metric" id="testsDone">0/12</div><div class="bar"><div id="testsBar" class="fill"></div></div></div>
+  </div>
+
+  <h2>7 Build Gates</h2>
+  <div class="card" id="gates"></div>
+
+  <h2>Day 1–7 Checklist</h2>
+  <div id="days"></div>
+
+  <h2>Week 1 Acceptance Test Matrix</h2>
+  <div class="card" id="tests"></div>
+
+  <div class="footer">
+    Generated from implementation_spec.md at <span id="generatedAt"></span>. Progress is stored in this browser with localStorage. Use Export JSON before switching machines.
+  </div>
+</div>
+<script>
+const DATA = {"sections": [{"day": 1, "title": "Server + Schema + DB + Fake Cedar", "items": ["actantosd in TypeScript (Fastify + Zod)", "POST /v1/intercept/tool-call", "Zod schema validation (all required fields)", "Return ToolCallInterceptionResponse (decision + decision_mode + reason_code + audit_event_id)", "Postgres: connect, create tables IN MIGRATION ORDER:", "agents, sessions, policy_bundles, tool_calls, policy_decisions,", "Unique indexes: uniq_agents_tenant_external, uniq_sessions_tenant_external,", "Seed demo bootstrap (required for FK lookups to work):", "tenant_id = \"t_demo\"", "agent: external_id=\"pi_demo\", runtime_type=\"pi\", environment=\"dev\", risk_tier=\"low\"", "session: external_id=\"s_demo\"", "policy_bundle: version=\"0.1.0\", engine=\"cedar\", active=true, source_hash=sha256(\"fake\")", "audit_chain_state: tenant_id=\"t_demo\", last_hash=\"genesis\", seq=0", "Step 0: Idempotency - return existing decision if (tenant_id, request_id) already exists", "FakeCedarProvider (DI injectable for tests):", "interface CedarProvider { evaluate(ctx: ToolCallContext) -> \"permit\" | \"forbid\" }", "if normalized.credential_access == true -> forbid; else -> permit", "Decision orchestration (minimal):", "cedar_result = forbid -> deny, reason_code = \"policy_forbid.credential_path\"", "cedar_result = permit -> allow, issue decision_token (HMAC-SHA256 of token payload)", "decision_mode = request.dry_run ? \"dry_run\" : \"enforce\"", "Hash-chain insert inside transaction:", "SELECT audit_chain_state FOR UPDATE", "canonical_json = JSON.stringify with sorted keys (stable across environments)", "event_hash = sha256(tenant_id + seq + prev_hash + canonical_json + ts)"], "verification": "POST with agent.id=\"pi_demo\", session.id=\"s_demo\"\ncredential_access:true -> {decision:\"deny\", reason_code:\"policy_forbid.credential_path\"}\nSend same request_id again -> same response, no new DB row (idempotency)"}, {"day": 2, "title": "Real Cedar Provider", "items": ["ToolCallContext internal type (used by every layer):", "canonicalHash helper (one implementation used everywhere):", "CedarCliProvider:", "Wrap cedar-policy-cli subprocess (cedar authorize)", "Load policy from policies/default.cedar", "Parse stdout -> \"Allow\" | \"Deny\" -> map to \"permit\" | \"forbid\"", "policies/default.cedar:", "Policy 0: permit ReadFile/ListFiles in /workspace/* when credential_access=false", "forbid ReadFile when credential_access=true", "policy_bundles table: insert default bundle, active=true", "FakeCedarProvider remains for unit tests (injected via DI)"], "verification": "README.md (credential_access=false, /workspace/ path) -> permit -> allow, reason_code=\"allowed\"\n.env (credential_access=true) -> forbid -> deny (reason_code=\"policy_forbid.credential_path\")"}, {"day": 3, "title": "guarded_read", "items": ["packages/pi-adapter/src/guarded_read.ts", "Path canonicalization (required before decision AND before execution):", "resolve absolute path from cwd + input", "resolve all symlinks (fs.realpathSync)", "separator-safe prefix check:", "re-verify canonical path immediately before actual file read (TOCTOU protection)", "pass canonical path in resource.path; execute only that canonical path", "Populate normalized:", "verb=read, mutation=false, destructive=false, network=false", "credential_access = path matches [.env, auth.json, .ssh/, .aws/, .npmrc, ...]", "credential_access=true -> decision will always be deny (never routed to approval)", "Handle responses:", "allow             -> read canonical path, return content", "deny              -> throw GuardedAccessDenied(reason_code)", "approval_required -> throw ApprovalRequired(approval_id)"], "verification": null}, {"day": 4, "title": "guarded_bash + Risk Rules", "items": ["packages/pi-adapter/src/guarded_bash.ts", "argv normalization:", "shlex-split command string -> argv tokens", "command_family = argv[0], subcommand = argv[1] if present", "treat unparseable/ambiguous commands as high-risk (approval_required)", "prefer direct argv exec (never shell=true equivalent)", "risk_rules.json loaded at startup", "Risk engine: match on tool.kind + normalized.command_family + normalized.subcommand", "Decision orchestration: cedar permit + risk approval_required + no prior_decision_id -> approval_required", "Docker mode selection from constraints.network_mode:", "\"none\"      -> --network none", "\"allowlist\" -> --network actantos_egress (egress proxy + allowlist)"], "verification": "guarded_bash(\"git push --dry-run origin main\") -> approval_required\n(use --dry-run or local fake remote; do NOT push to real GitHub in demo)"}, {"day": 5, "title": "Approval Flow (with bug fixes applied)", "items": ["approvals table with: scope_hash (from tool_calls.scope_hash), one_use_token_hash (nullable), used_at, decided_at", "scope_hash on tool_call creation:", "POST /v1/approvals/{approval_id}/decide:", "body: {decision, approver_user_id}", "set decided_at, decided_by, status='approved'", "generate random token: raw_token = base64url(randomBytes(32))", "store one_use_token_hash = sha256(raw_token); never store raw_token", "return {\"approval_id\": \"...\", \"approval_token\": raw_token, \"expires_at\": \"...\"}", "Re-submission inside transaction (FOR UPDATE):", "Adapter sends NEW request_id (e.g. req_001_exec) + authorization.prior_decision_id", "SELECT approvals WHERE id=$approval_id AND tenant_id=$t FOR UPDATE", "check: status='approved', expires_at>now(), used_at IS NULL", "check: scope_hash matches tool_calls.scope_hash for new request", "check: sha256(authorization.approval_token) == one_use_token_hash", "SET used_at=now(), used_by_request_id=$new_request_id", "if used_at already set -> deny (invalid_approval: double-use)"], "verification": "POST /decide {approved} -> random token returned, decided_at set\nRe-submit with NEW request_id + prior_decision_id -> allow, used_at set\nResend original request_id -> Step 0 returns existing approval_required (not consumed)\nRe-submit same approval_token again -> deny (used_at already set)"}, {"day": 6, "title": "Docker Sandbox Executor", "items": ["Docker executor module:", "Verify decision_token (HMAC verify + all claims) before running anything", "Select network mode from constraints.network_mode:", "Apply all Day 1 Docker constraints (see §9.1)", "Enforce timeout and max_output_bytes", "Capture exit_code, sha256(stdout), sha256(stderr)", "redacted_preview: first 200 chars; scrub credential patterns before logging", "POST /v1/tool-result:", "Parse ToolResultRequest", "Verify decision_token when status in [executed, failed, timeout]; skip for blocked", "INSERT audit_event inside hash-chain transaction"], "verification": "Approved git push --dry-run executes in Docker (egress_proxy = plain bridge, Week 1)\nBlocked .env read -> POST tool-result with status=blocked, no decision_token required\nResult row in audit_events with stdout_hash and hash chain"}, {"day": 7, "title": "Audit Timeline + Demo Repo", "items": ["GET /v1/sessions/{session_id}/events:", "audit_events ordered by created_at ASC", "include: event_type, actor, tool_call_id, decision_id, reason_code, event_hash", "POST /v1/kill-switches {scope_type, scope_id, reason}", "Pipeline Step 1 checks this table first", "Demo repo:", "README: 5-step setup from scratch (assume nothing pre-installed except Docker + Node)", "demo.ts: Steps 1-7 in sequence, each step prints result", "policies/default.cedar (Policy 0 + credential_access forbid)", "risk_rules.json", "docker-compose.yml (actantosd + postgres)"], "verification": "Run demo.ts fresh machine in < 10 minutes.\nAll 7 steps pass without manual intervention except the approval API call."}], "matrix": [{"id": "T1", "scenario": "README.md read", "expected": "allow, reason_code=\"allowed\""}, {"id": "T2", "scenario": ".env read", "expected": "deny, reason_code=\"policy_forbid.credential_path\""}, {"id": "T3", "scenario": "../../outside read", "expected": "deny, reason_code=\"canonicalization_failed\""}, {"id": "T4", "scenario": "symlink-to-.env read", "expected": "deny, reason_code=\"policy_forbid.credential_path\""}, {"id": "T5", "scenario": "/workspace2/file read", "expected": "deny, reason_code=\"canonicalization_failed\" (separator-safe)"}, {"id": "T6", "scenario": "same request_id retry", "expected": "same decision, no new DB row (idempotency)"}, {"id": "T7", "scenario": "git push --dry-run", "expected": "approval_required"}, {"id": "T8", "scenario": "approve + NEW request_id", "expected": "allow, used_at set on approval"}, {"id": "T9", "scenario": "same approval_token reused", "expected": "deny, reason_code=\"invalid_approval\" (used_at set)"}, {"id": "T10", "scenario": "kill switch active", "expected": "deny, reason_code=\"kill_switch_active\""}, {"id": "T11", "scenario": "tool-result status=executed without decision_token", "expected": "rejected"}, {"id": "T12", "scenario": "dry_run=true on policy_forbid path", "expected": "would_deny, no decision_token, audit logged"}], "gates": [{"id": "G1", "name": "Server + DB + Fake Cedar", "day": "Day 1", "doneWhen": "POST /v1/intercept/tool-call returns allow/deny and audit row is created."}, {"id": "G2", "name": "Real Cedar Provider", "day": "Day 2", "doneWhen": "README.md permits; .env denies using default.cedar."}, {"id": "G3", "name": "guarded_read", "day": "Day 3", "doneWhen": "Canonical path rules block .env, traversal, symlink escape, /workspace2."}, {"id": "G4", "name": "guarded_bash + Risk Rules", "day": "Day 4", "doneWhen": "git push --dry-run returns approval_required."}, {"id": "G5", "name": "Approval Flow", "day": "Day 5", "doneWhen": "Approval token is random, one-use, expires, and resubmission uses a new request_id."}, {"id": "G6", "name": "Docker Sandbox Executor", "day": "Day 6", "doneWhen": "Execution requires a valid decision_token; tool-result without token is rejected."}, {"id": "G7", "name": "Audit Timeline + Demo Repo", "day": "Day 7", "doneWhen": "Full demo runs and audit timeline shows every decision before execution."}], "generatedAt": "2026-07-05T16:29:11"};
+const STORE_KEY = 'actantos-week1-dashboard-v1';
+let state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); updateMetrics(); }
+function key(...parts) { return parts.join('::'); }
+function esc(s) { return String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+function getStatus(k) { return state[k]?.status || 'TODO'; }
+function getEvidence(k) { return state[k]?.evidence || ''; }
+function setStatus(k, v) { state[k] = state[k] || {}; state[k].status = v; save(); render(); }
+function setEvidence(k, v) { state[k] = state[k] || {}; state[k].evidence = v; save(); }
+function statusClass(v) { return String(v).toLowerCase(); }
+function statusSelect(k, options=['TODO','DOING','REVIEW','DONE']) {
+  const cur = getStatus(k);
+  return `<select onchange="setStatus('${k}', this.value)" class="${statusClass(cur)}">${options.map(o=>`<option value="${o}" ${o===cur?'selected':''}>${o}</option>`).join('')}</select>`;
+}
+function evidenceBox(k, placeholder='Paste command result, URL, screenshot note, PR link, or DB row evidence') {
+  return `<textarea placeholder="${esc(placeholder)}" oninput="setEvidence('${k}', this.value)">${esc(getEvidence(k))}</textarea>`;
+}
+function render() {
+  document.getElementById('generatedAt').textContent = DATA.generatedAt;
+  document.getElementById('gates').innerHTML = DATA.gates.map(g => {
+    const k = key('gate', g.id);
+    const st = getStatus(k);
+    return `<div class="gate"><span class="badge ${statusClass(st)}">${g.id}</span><div><h3>${esc(g.name)}</h3><div class="small">${esc(g.day)} · Done when: ${esc(g.doneWhen)}</div></div><div>${statusSelect(k)}</div></div>`
+  }).join('');
+  document.getElementById('days').innerHTML = DATA.sections.map(sec => `
+    <div class="card day-card">
+      <h3>Day ${sec.day}: ${esc(sec.title)}</h3>
+      <p class="hint">${sec.verification ? 'Verification: ' + esc(sec.verification) : ''}</p>
+      ${sec.items.map((item, i) => {
+        const k = key('day', sec.day, i+1);
+        return `<div class="task"><div class="idx">${i+1}</div><div class="task-title">${esc(item)}</div><div>${statusSelect(k)}</div><div>${evidenceBox(k)}</div></div>`
+      }).join('')}
+    </div>`).join('');
+  document.getElementById('tests').innerHTML = DATA.matrix.map(t => {
+    const k = key('test', t.id);
+    return `<div class="testrow"><div><span class="badge">${esc(t.id)}</span></div><div><strong>${esc(t.scenario)}</strong></div><div class="mono small">${esc(t.expected)}</div><div>${statusSelect(k, ['TODO','RUNNING','PASS','FAIL'])}</div><div>${evidenceBox(k, 'Paste actual output / command / screenshot note')}</div></div>`
+  }).join('');
+  updateMetrics();
+}
+function count(prefix, statusesDone) {
+  const keys=[];
+  if (prefix==='gate') DATA.gates.forEach(g=>keys.push(key('gate',g.id)));
+  if (prefix==='day') DATA.sections.forEach(sec=>sec.items.forEach((_,i)=>keys.push(key('day',sec.day,i+1))));
+  if (prefix==='test') DATA.matrix.forEach(t=>keys.push(key('test',t.id)));
+  const done = keys.filter(k=>statusesDone.includes(getStatus(k))).length;
+  return [done, keys.length];
+}
+function updateMetrics() {
+  const [gd,gt] = count('gate',['DONE']);
+  const [td,tt] = count('day',['DONE']);
+  const [pd,pt] = count('test',['PASS']);
+  const overall = gt+tt+pt ? Math.round(((gd+td+pd)/(gt+tt+pt))*100) : 0;
+  document.getElementById('overallPct').textContent = overall + '%';
+  document.getElementById('overallBar').style.width = overall + '%';
+  document.getElementById('gatesDone').textContent = `${gd}/${gt}`;
+  document.getElementById('gatesBar').style.width = (gt?gd/gt*100:0) + '%';
+  document.getElementById('tasksDone').textContent = `${td}/${tt}`;
+  document.getElementById('tasksBar').style.width = (tt?td/tt*100:0) + '%';
+  document.getElementById('testsDone').textContent = `${pd}/${pt}`;
+  document.getElementById('testsBar').style.width = (pt?pd/pt*100:0) + '%';
+}
+function exportState() {
+  const blob = new Blob([JSON.stringify({schema:'actantos-week1-dashboard-v1', exportedAt:new Date().toISOString(), state}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'actantos-progress-export.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function importState(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { const parsed = JSON.parse(reader.result); state = parsed.state || parsed; save(); render(); }
+    catch(e) { alert('Invalid JSON'); }
+  };
+  reader.readAsText(file);
+}
+function resetState() { if (confirm('Reset all local progress?')) { state = {}; save(); render(); } }
+render();
+</script>
+</body>
+</html>

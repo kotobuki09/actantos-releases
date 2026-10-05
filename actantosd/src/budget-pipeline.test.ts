@@ -1,3 +1,4 @@
+import { FakeCedarProvider } from "./fake-cedar-provider.ts";
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -61,7 +62,7 @@ class ExhaustedBudgetProvider implements BudgetProvider {
 test("intercept denies budget_exceeded before policy evaluation and replays idempotently", async () => {
   const repository = new InMemoryToolCallRepository()
   const budgetProvider = new ExhaustedBudgetProvider()
-  const service = createInterceptService({
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(),
     repository,
     hmacSecret: "test-secret",
     budgetProvider,

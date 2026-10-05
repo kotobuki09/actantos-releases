@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+import { createHmac } from "node:crypto"
 
 import { buildServer } from "./server.ts"
 import { createTestDatabase } from "./test-database.ts"
@@ -112,6 +113,65 @@ test("GET /v1/evidence/export returns a tenant evidence package with audit recor
   assert.ok(exportResponse.json().summary.audit_event_count >= 2)
   assert.match(JSON.stringify(exportResponse.json().decisions), /req_export_allow_0001/u)
   assert.match(JSON.stringify(exportResponse.json().audit_timelines), /tool_result\.recorded/u)
+
+  await server.close()
+  await database.close()
+})
+
+test("GET /v1/evidence/export includes a valid digital signature that is invalidated by modifications", async () => {
+  const database = await createTestDatabase()
+  const hmacSecret = "test-export-secret"
+  const server = buildServer({
+    hmacSecret,
+    repository: new PostgresToolCallRepository(database),
+    database,
+  })
+  await server.ready()
+
+  const exportResponse = await server.inject({
+    method: "GET",
+    url: "/v1/evidence/export?tenant_id=t_demo&session_id=s_demo",
+  })
+
+  assert.equal(exportResponse.statusCode, 200)
+  const body = exportResponse.json()
+
+  // 1. Signature field must be present in the response body
+  assert.equal(typeof body.signature, "string")
+  assert.equal(body.signature.length, 64)
+
+  // 1a. PQ-11 / 1.4: Signature must also be emitted as X-Actantos-Signature response header
+  const signatureHeader = exportResponse.headers["x-actantos-signature"]
+  assert.equal(typeof signatureHeader, "string", "X-Actantos-Signature header must be present")
+  assert.equal(signatureHeader, body.signature, "X-Actantos-Signature header must match body signature")
+
+  // 2. A validation check block correctly verifies authentic packages
+  const verifyPackage = (pkg: any, secret: string): boolean => {
+    if (!pkg || typeof pkg.signature !== "string") {
+      return false
+    }
+    const signature = pkg.signature
+    const copy = { ...pkg }
+    delete copy.signature
+    const computed = createHmac("sha256", secret)
+      .update(JSON.stringify(copy))
+      .digest("hex")
+    return signature === computed
+  }
+
+  const isAuthentic = verifyPackage(body, hmacSecret)
+  assert.equal(isAuthentic, true, "Signature should be valid for unmodified package")
+
+  // 3. Modifying any data in the downloaded package invalidates the signature
+  const modifiedBody = { ...body }
+  modifiedBody.tenant_id = "t_malicious"
+  const isAuthenticModified = verifyPackage(modifiedBody, hmacSecret)
+  assert.equal(isAuthenticModified, false, "Signature should be invalid after modifying data")
+
+  // 4. Modifying nested data should also invalidate the signature
+  const modifiedSummary = { ...body, summary: { ...body.summary, session_count: 999 } }
+  const isAuthenticNestedModified = verifyPackage(modifiedSummary, hmacSecret)
+  assert.equal(isAuthenticNestedModified, false, "Signature should be invalid after modifying summary")
 
   await server.close()
   await database.close()

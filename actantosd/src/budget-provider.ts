@@ -1,4 +1,4 @@
-import type { Database } from "./database.ts"
+import type { Database, DatabaseClient } from "./database.ts"
 
 export type BudgetCheck = {
   readonly allowed: boolean
@@ -13,7 +13,7 @@ export type BudgetCheckParams = {
 }
 
 export interface BudgetProvider {
-  checkAndConsume(params: BudgetCheckParams): Promise<BudgetCheck>
+  checkAndConsume(params: BudgetCheckParams, client?: DatabaseClient): Promise<BudgetCheck>
 }
 
 export class AllowAllBudgetProvider implements BudgetProvider {
@@ -47,9 +47,9 @@ export class PostgresBudgetProvider implements BudgetProvider {
     this.#database = database
   }
 
-  async checkAndConsume(params: BudgetCheckParams): Promise<BudgetCheck> {
-    return this.#database.transaction(async (client) => {
-      const rows = await client.query<BudgetRow>(
+  async checkAndConsume(params: BudgetCheckParams, client?: DatabaseClient): Promise<BudgetCheck> {
+    const doWork = async (txClient: DatabaseClient): Promise<BudgetCheck> => {
+      const rows = await txClient.query<BudgetRow>(
         `
           SELECT id, current_value, limit_value, window_seconds, window_start
           FROM budgets
@@ -103,20 +103,25 @@ export class PostgresBudgetProvider implements BudgetProvider {
 
       for (const budget of preparedBudgets) {
         if (budget.expired) {
-          await client.query(
+          await txClient.query(
             "UPDATE budgets SET current_value = 1, window_start = now() WHERE id = $1",
             [budget.id],
           )
           continue
         }
 
-        await client.query(
+        await txClient.query(
           "UPDATE budgets SET current_value = current_value + 1 WHERE id = $1",
           [budget.id],
         )
       }
 
       return { allowed: true }
-    })
+    }
+
+    if (client !== undefined) {
+      return doWork(client)
+    }
+    return this.#database.transaction(doWork)
   }
 }

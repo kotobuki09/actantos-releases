@@ -58,6 +58,36 @@ const getNestedRecord = (
   return value
 }
 
+/**
+ * Whether this host lets an unprivileged process create a file symlink.
+ *
+ * Windows answers `EPERM` unless Developer Mode is on or the process is elevated, and Git for
+ * Windows runners usually are neither. Probed once, into a real temporary directory, rather than
+ * inferred from the platform: a Windows box with Developer Mode on does support symlinks and must
+ * still run this test.
+ *
+ * A false here means the test below cannot run — not that the product is fine. It skips loudly
+ * instead, and the skip is reported rather than hidden.
+ */
+const symlinkCreationSupported = (): boolean => {
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "actantos-symlink-probe-"))
+  const target = path.join(probeDir, "target")
+  const link = path.join(probeDir, "link")
+  try {
+    fs.writeFileSync(target, "probe", "utf8")
+    fs.symlinkSync(target, link, "file")
+    return true
+  } catch {
+    return false
+  } finally {
+    fs.rmSync(probeDir, { recursive: true, force: true })
+  }
+}
+
+const SYMLINK_UNSUPPORTED_REASON =
+  "creating a file symlink requires Developer Mode or elevation on Windows (EPERM); " +
+  "the symlink-resolution path cannot be exercised on this host"
+
 const createWorkspace = () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "pi-adapter-"))
   const workspaceRoot = path.join(root, "workspace")
@@ -229,7 +259,16 @@ test("Given a traversal path when guardedRead runs Then it denies before calling
   }
 })
 
-test("Given a symlink to a credential file when guardedRead runs Then it resolves the symlink and denies with the policy reason code", async () => {
+test("Given a symlink to a credential file when guardedRead runs Then it resolves the symlink and denies with the policy reason code", async (t) => {
+  // Skipped, not passed, and not deleted. The behaviour it covers — a symlink pointing at a
+  // credential file must be resolved before the policy decision, not read through — is exactly
+  // the kind of thing that silently regresses, so the test stays in the suite and runs wherever
+  // the platform permits.
+  if (!symlinkCreationSupported()) {
+    t.skip(SYMLINK_UNSUPPORTED_REASON)
+    return
+  }
+
   const { workspaceRoot } = createWorkspace()
   const envPath = path.join(workspaceRoot, ".env")
   const linkPath = path.join(workspaceRoot, "linked.env")

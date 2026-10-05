@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "package_version": "1.1.0",
+  "release_tag": "v1.1.0",
+  "maturity_label": "quiet-open-core",
+  "requires_approval_by": "engineering-leadership",
+  "allow_telemetry": false,
+  "allow_external_auth": false,
+  "allowed_evaluator_modes": [
+    "production",
+    "development",
+    "test"
+  ],
+  "validation_class": "locally-verified",
+  "supported_deployments": [
+    "self-host-npm",
+    "self-host-docker-compose"
+  ],
+  "evidence_date": "2026-07-12",
+  "public_artifact_urls": [
+    "https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0"
+  ],
+  "claim_entries": [
+    {
+      "id": "enforcement-kernel-decision-api",
+      "statement": "Self-host enforcement kernel decides allow, deny, or approval_required before tool execution",
+      "claim_level": "locally-verified"
+    },
+    {
+      "id": "public-quiet-open-core-tag",
+      "statement": "Mode A public package baseline is Quiet Open-Core artifact tag v1.0.0; semver is not production qualification",
+      "claim_level": "release-verified"
+    },
+    {
+      "id": "frozen-v1-api-contract",
+      "statement": "Frozen /v1 HTTP contract for the open-core self-host surface",
+      "claim_level": "locally-verified"
+    },
+    {
+      "id": "cedar-authoritative-evaluation",
+      "statement": "Cedar is the intended authoritative evaluator; production mode fails closed without FakeCedar silent fallback",
+      "claim_level": "locally-verified",
+      "notes": "ACTANTOS_EVALUATOR_MODE=production / ACTANTOS_REQUIRE_CEDAR=1 refuse FakeCedar; see docs/evaluator-mode.md"
+    },
+    {
+      "id": "egress-destination-enforcement",
+      "statement": "Authenticated destination-enforcing egress proxy",
+      "claim_level": "unsupported",
+      "deferred_to": "PQ-03",
+      "notes": "Docker network_mode=egress_proxy only selects actantos_egress bridge network; URL SSRF guard is application-level only. See docs/egress-claims.md"
+    },
+    {
+      "id": "sandbox-network-mode-none",
+      "statement": "Docker sandbox can run with network_mode=none",
+      "claim_level": "implemented"
+    },
+    {
+      "id": "url-ssrf-application-guard",
+      "statement": "Application-level URL target guard blocks localhost, private, link-local, and cloud metadata hostnames",
+      "claim_level": "locally-verified"
+    },
+    {
+      "id": "external-living-pilot-proof",
+      "statement": "Living external Pilot Done (Unaided) or customer production proof",
+      "claim_level": "unsupported"
+    },
+    {
+      "id": "production-qualified-platform",
+      "statement": "Production-qualified multi-tenant enterprise platform",
+      "claim_level": "conditional",
+      "deferred_to": "Mode-B"
+    },
+    {
+      "id": "stage3-v1.1.0-mode-a-public-baseline",
+      "statement": "Stage 3 / v1.1.0 language as the Mode A public maturity baseline",
+      "claim_level": "unsupported",
+      "notes": "actantos-releases may contain 1.1.0 Stage 3 engineering as implemented/local work; it is not the Mode A claim baseline and is not production-qualified"
+    }
+  ],
+  "repository_relationship": {
+    "mode_a_kernel": {
+      "path": "plan/actantosd",
+      "package_version": "1.0.0",
+      "stage": "quiet-open-core",
+      "role": "mode-a-authoritative-kernel-tree"
+    },
+    "public_releases_tree": {
+      "path": "actantos-releases/actantosd",
+      "package_version": "1.1.0",
+      "stage": "stage3-governed-enterprise-autonomy",
+      "role": "public-artifact-repo",
+      "claim_level": "implemented",
+      "notes": "Not Mode A public maturity baseline; enterprise production-qualified language requires Mode B"
+    },
+    "website": {
+      "path": "web/actantos",
+      "role": "public-claims-surface",
+      "consumer_status": "must-align-or-fail-checks"
+    }
+  },
+  "forbidden_maturity_encodings": [
+    "v1.1.0-production",
+    "battle-tested-production",
+    "enterprise-grade",
+    "compliance-certified"
+  ],
+  "precedence": {
+    "authority_order": [
+      "actantosd/release-maturity-truth.json",
+      "actantosd/package.json version + actantos.stage",
+      "actantosd/artifacts/release-manifest.json (generated)",
+      "human docs and website copy"
+    ],
+    "rule": "When surfaces disagree during transition, release-maturity-truth.json wins for maturity, claim levels, and Mode A public identity. package.json must match package_version and maturity_label. release-manifest.json is generated and must match package identity. Website and docs may not claim a higher public maturity or version baseline than this file."
+  }
+}

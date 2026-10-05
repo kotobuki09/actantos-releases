@@ -6,7 +6,7 @@ import type {
   ToolCallInterceptionResponse,
 } from "./contracts.ts"
 import type { CedarDecision } from "./fake-cedar-provider.ts"
-import { parsePgBigInt, type Database } from "./database.ts"
+import { parsePgBigInt, type Database, type DatabaseClient } from "./database.ts"
 import { canonicalStringify, sha256 } from "./hash.ts"
 
 export type StoredDecision = {
@@ -33,16 +33,24 @@ export interface ToolCallRepository {
   findByRequestId(
     tenantId: string,
     requestId: string,
+    client?: DatabaseClient,
   ): Promise<StoredDecision | null>
 
-  saveDecision(record: NewStoredDecision): Promise<void>
+  saveDecision(record: NewStoredDecision, client?: DatabaseClient): Promise<void>
 
   isKillSwitchActive(
     tenantId: string,
     agentExternalId: string,
     sessionExternalId: string,
     toolName: string,
+    client?: DatabaseClient,
   ): Promise<boolean>
+
+  leasePendingToolCalls(
+    workerId: string,
+    batchSize: number,
+    leaseDurationMs: number,
+  ): Promise<any[]>
 
   verifyAndConsumeApproval(params: {
     tenantId: string
@@ -51,7 +59,7 @@ export interface ToolCallRepository {
     scopeHash: string
     requestId: string
     consume?: boolean
-  }): Promise<ApprovalVerificationResult>
+  }, client?: DatabaseClient): Promise<ApprovalVerificationResult>
 }
 
 // ---------------------------------------------------------------------------
@@ -76,11 +84,12 @@ export class InMemoryToolCallRepository implements ToolCallRepository {
   async findByRequestId(
     tenantId: string,
     requestId: string,
+    _client?: DatabaseClient,
   ): Promise<StoredDecision | null> {
     return this.#decisions.get(this.#key(tenantId, requestId)) ?? null
   }
 
-  async saveDecision(record: NewStoredDecision): Promise<void> {
+  async saveDecision(record: NewStoredDecision, _client?: DatabaseClient): Promise<void> {
     this.#decisions.set(
       this.#key(record.request.tenant_id, record.request.request_id),
       record,
@@ -103,9 +112,20 @@ export class InMemoryToolCallRepository implements ToolCallRepository {
     _agentExternalId: string,
     _sessionExternalId: string,
     _toolName: string,
+    _client?: DatabaseClient,
   ): Promise<boolean> {
     return this.#killSwitchActive
   }
+
+  async leasePendingToolCalls(
+    workerId: string,
+    batchSize: number,
+    leaseDurationMs: number,
+  ): Promise<any[]> {
+    return []
+  }
+
+
 
   async verifyAndConsumeApproval(params: {
     tenantId: string
@@ -114,30 +134,30 @@ export class InMemoryToolCallRepository implements ToolCallRepository {
     scopeHash: string
     requestId: string
     consume?: boolean
-  }): Promise<ApprovalVerificationResult> {
+  }, client?: DatabaseClient): Promise<ApprovalVerificationResult> {
     const approval = this.#approvals.get(params.approvalId)
 
     if (approval === undefined || approval.tenantId !== params.tenantId) {
-      return { valid: false, reason: "approval not found" }
+      return { valid: false, reason: "approval not found" } as const
     }
     if (approval.status !== "approved") {
-      return { valid: false, reason: "approval not in approved state" }
+      return { valid: false, reason: "approval not in approved state" } as const
     }
     if (new Date(approval.expiresAt) <= new Date()) {
-      return { valid: false, reason: "approval expired" }
+      return { valid: false, reason: "approval expired" } as const
     }
     if (approval.usedAt !== undefined) {
-      return { valid: false, reason: "approval already used" }
+      return { valid: false, reason: "approval already used" } as const
     }
     if (approval.scopeHash !== params.scopeHash) {
-      return { valid: false, reason: "scope hash mismatch" }
+      return { valid: false, reason: "scope hash mismatch" } as const
     }
     if (approval.tokenHash === undefined) {
-      return { valid: false, reason: "no token set" }
+      return { valid: false, reason: "no token set" } as const
     }
     const submittedHash = sha256(params.approvalToken)
     if (submittedHash !== approval.tokenHash) {
-      return { valid: false, reason: "invalid token" }
+      return { valid: false, reason: "invalid token" } as const
     }
 
     // Atomically mark as used
@@ -259,6 +279,8 @@ export class PostgresToolCallRepository implements ToolCallRepository {
     return rows.length > 0
   }
 
+
+
   async verifyAndConsumeApproval(params: {
     tenantId: string
     approvalId: string
@@ -266,7 +288,7 @@ export class PostgresToolCallRepository implements ToolCallRepository {
     scopeHash: string
     requestId: string
     consume?: boolean
-  }): Promise<ApprovalVerificationResult> {
+  }, client?: DatabaseClient): Promise<ApprovalVerificationResult> {
     return this.#database.transaction(async (client) => {
       const rows = await client.query<ApprovalRow>(
         `
@@ -281,19 +303,19 @@ export class PostgresToolCallRepository implements ToolCallRepository {
       const approval = rows[0]
 
       if (approval === undefined) {
-        return { valid: false, reason: "approval not found" }
+        return { valid: false, reason: "approval not found" } as const
       }
       if (approval.status !== "approved") {
-        return { valid: false, reason: "approval not in approved state" }
+        return { valid: false, reason: "approval not in approved state" } as const
       }
       if (new Date(approval.expires_at) <= new Date()) {
-        return { valid: false, reason: "approval expired" }
+        return { valid: false, reason: "approval expired" } as const
       }
       if (approval.used_at !== null) {
-        return { valid: false, reason: "approval already used" }
+        return { valid: false, reason: "approval already used" } as const
       }
       if (approval.scope_hash !== params.scopeHash) {
-        return { valid: false, reason: "scope hash mismatch" }
+        return { valid: false, reason: "scope hash mismatch" } as const
       }
       if (approval.one_use_token_hash === null) {
         return { valid: false, reason: "no token set on approval" }
@@ -301,7 +323,7 @@ export class PostgresToolCallRepository implements ToolCallRepository {
 
       const submittedHash = sha256(params.approvalToken)
       if (submittedHash !== approval.one_use_token_hash) {
-        return { valid: false, reason: "invalid token" }
+        return { valid: false, reason: "invalid token" } as const
       }
 
       // Atomically consume the token
@@ -407,8 +429,8 @@ export class PostgresToolCallRepository implements ToolCallRepository {
     }
   }
 
-  async saveDecision(record: NewStoredDecision): Promise<void> {
-    await this.#database.transaction(async (client) => {
+  async saveDecision(record: NewStoredDecision, client?: DatabaseClient): Promise<void> {
+    const doWork = async (client: DatabaseClient) => {
       const agent = await client.query<AgentRow>(
         "SELECT id FROM agents WHERE tenant_id = $1 AND external_id = $2",
         [record.request.tenant_id, record.request.agent.id],
@@ -500,7 +522,7 @@ export class PostgresToolCallRepository implements ToolCallRepository {
           record.request.tenant_id,
           toolCallId,
           policyBundleId,
-          record.cedarResult,
+          typeof record.cedarResult === "string" ? record.cedarResult : record.cedarResult.decision,
           record.riskClass,
           approvalReq,
           record.response.decision,
@@ -595,6 +617,42 @@ export class PostgresToolCallRepository implements ToolCallRepository {
         `,
         [eventHash, nextSequence.toString(), now, record.request.tenant_id],
       )
+    }
+    if (client !== undefined) return doWork(client)
+    return this.#database.transaction(doWork)
+  }
+
+  async leasePendingToolCalls(
+    workerId: string,
+    batchSize: number,
+    leaseDurationMs: number,
+  ): Promise<any[]> {
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + leaseDurationMs)
+
+    return this.#database.transaction(async (txClient) => {
+      const result = await txClient.query<any>(
+        `
+          WITH pending AS (
+            SELECT id FROM tool_calls
+            WHERE status = 'pending'
+              AND (lease_expires_at IS NULL OR lease_expires_at < $1)
+            ORDER BY created_at ASC
+            LIMIT $2
+            FOR UPDATE SKIP LOCKED
+          )
+          UPDATE tool_calls tc
+          SET 
+            worker_id = $3,
+            lease_expires_at = $4
+          FROM pending
+          WHERE tc.id = pending.id
+          RETURNING tc.*
+        `,
+        [now.toISOString(), batchSize, workerId, expiresAt.toISOString()],
+      )
+      return result as any[]
     })
   }
+
 }

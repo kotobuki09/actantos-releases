@@ -6,11 +6,11 @@ import type { Database } from "./database.ts"
 import { loadDefaultRiskRules } from "./risk-engine.ts"
 
 const riskRulesQuerySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
 })
 
 const putRiskRulesBodySchema = z.object({
-  tenant_id: z.string().min(1),
+  tenant_id: z.string().min(1).optional().default("t_demo"),
   rules: riskRulesSchema,
 })
 

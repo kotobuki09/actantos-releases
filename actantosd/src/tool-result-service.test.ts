@@ -1,62 +1,21 @@
+import { FakeCedarProvider } from "./fake-cedar-provider.ts";
+import { approvedWorkspaceShellRequest } from "./fake-cedar-fixtures.ts";
 import assert from "node:assert/strict"
 import test from "node:test"
 
 import { newDb } from "pg-mem"
 
 import type { ToolCallInterceptionRequest } from "./contracts.ts"
-import { migrateDatabaseForUnitTests, seedDemoData, type Database } from "./database.ts"
+import { migrateDatabase, seedDemoData, type Database } from "./database.ts"
 import { signDecisionToken } from "./hash.ts"
 import { createInterceptService } from "./intercept-service.ts"
 import { recordToolResult } from "./tool-result-service.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
 
-const baseShellRequest = (): ToolCallInterceptionRequest => ({
-  request_id: "req_60000001",
-  tenant_id: "t_demo",
-  agent: {
-    id: "pi_demo",
-    runtime_type: "pi",
-    environment: "dev",
-    risk_tier: "low",
-  },
-  subject: {
-    user_id: "u_demo",
-    role: "developer",
-  },
-  session: {
-    id: "s_demo",
-    cwd: "/workspace",
-    budget_remaining_cents: 10_000,
-  },
-  tool: {
-    kind: "shell",
-    name: "guarded_bash",
-    operation: "ExecuteShellCommand",
-    schema_hash: "",
-  },
-  resource: {
-    id: "/workspace",
-    kind: "workspace",
-    path: "/workspace",
-  },
-  action: {
-    operation: "ExecuteShellCommand",
-    args: {
-      command: "printf hello",
-      argv: ["printf", "hello"],
-    },
-  },
-  normalized: {
-    verb: "execute",
-    mutation: false,
-    destructive: false,
-    network: false,
-    credential_access: false,
-    risk_class: "low",
-    command_family: "printf",
-    subcommand: "hello",
-  },
-})
+// Shared with audit-chain-verifier.test.ts; see ./fake-cedar-fixtures.ts for why there is exactly
+// one definition of this fixture and why cedar-fixture-parity.test.ts checks it against real Cedar.
+const baseShellRequest = (): ToolCallInterceptionRequest =>
+  approvedWorkspaceShellRequest("req_60000001")
 
 const createTestDatabase = async (): Promise<Database> => {
   const memoryDb = newDb()
@@ -66,6 +25,7 @@ const createTestDatabase = async (): Promise<Database> => {
 
   const database: Database = {
     async query(sql, params = []) {
+      if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
       const result = await pool.query(sql, [...params])
       return result.rows
     },
@@ -76,6 +36,7 @@ const createTestDatabase = async (): Promise<Database> => {
         await client.query("BEGIN")
         const result = await callback({
           async query(sql, params = []) {
+            if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
             const queryResult = await client.query(sql, [...params])
             return queryResult.rows
           },
@@ -94,7 +55,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabaseForUnitTests(database)
+  await migrateDatabase(database)
   await seedDemoData(database)
 
   return database
@@ -103,7 +64,7 @@ const createTestDatabase = async (): Promise<Database> => {
 test("recordToolResult appends an audit event and updates the tool call status", async () => {
   const database = await createTestDatabase()
   const repository = new PostgresToolCallRepository(database)
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
   const request = baseShellRequest()
 
   const decision = await service.intercept(request)
@@ -170,7 +131,7 @@ test("recordToolResult appends an audit event and updates the tool call status",
 test("recordToolResult rejects an expired decision token", async () => {
   const database = await createTestDatabase()
   const repository = new PostgresToolCallRepository(database)
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
   const request = baseShellRequest()
 
   const decision = await service.intercept(request)
@@ -222,7 +183,7 @@ test("recordToolResult rejects an expired decision token", async () => {
 test("recordToolResult rejects a signed decision token with an invalid JSON payload", async () => {
   const database = await createTestDatabase()
   const repository = new PostgresToolCallRepository(database)
-  const service = createInterceptService({ repository, hmacSecret: "test-secret" })
+  const service = createInterceptService({ cedarProvider: new FakeCedarProvider(), repository, hmacSecret: "test-secret" })
   const request = baseShellRequest()
 
   const decision = await service.intercept(request)

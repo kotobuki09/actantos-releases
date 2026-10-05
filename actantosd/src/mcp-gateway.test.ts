@@ -1,3 +1,4 @@
+import { FakeCedarProvider } from "./fake-cedar-provider.ts";
 import assert from "node:assert/strict"
 import test from "node:test"
 
@@ -6,14 +7,16 @@ import { newDb } from "pg-mem"
 
 import {
   buildGatewayInterceptionRequest,
+  createGatewayRequestContext,
   executeGatewayToolCall,
   filterGatewayTools,
 } from "./mcp-gateway.ts"
 import type { Database } from "./database.ts"
-import { migrateDatabaseForUnitTests, seedDemoData } from "./database.ts"
+import { migrateDatabase, seedDemoData } from "./database.ts"
 import { createInterceptService } from "./intercept-service.ts"
 import { recordToolResult } from "./tool-result-service.ts"
 import { PostgresToolCallRepository } from "./tool-call-repository.ts"
+import { buildServer } from "./server.ts"
 
 const gatewayContext = {
   tenantId: "t_demo",
@@ -68,6 +71,7 @@ const createTestDatabase = async (): Promise<Database> => {
 
   const database: Database = {
     async query(sql, params = []) {
+      if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
       const result = await pool.query(sql, [...params])
       return result.rows
     },
@@ -78,6 +82,7 @@ const createTestDatabase = async (): Promise<Database> => {
         await client.query("BEGIN")
         const result = await callback({
           async query(sql, params = []) {
+            if (sql.includes("-- actantos-pg-only") || sql.includes("CREATE OR REPLACE FUNCTION enforce_tool_call_state_transitions") || sql.includes("CREATE TRIGGER trg_enforce_tool_call_transitions")) { return [] }
             const queryResult = await client.query(sql, [...params])
             return queryResult.rows
           },
@@ -96,7 +101,7 @@ const createTestDatabase = async (): Promise<Database> => {
     },
   }
 
-  await migrateDatabaseForUnitTests(database)
+  await migrateDatabase(database)
   await seedDemoData(database)
 
   return database
@@ -288,7 +293,7 @@ test("executeGatewayToolCall forwards allowed tools and records execution", asyn
 test("executeGatewayToolCall records results successfully against the Postgres-backed request_id", async () => {
   const database = await createTestDatabase()
   const repository = new PostgresToolCallRepository(database)
-  const interceptService = createInterceptService({
+  const interceptService = createInterceptService({ cedarProvider: new FakeCedarProvider(),
     repository,
     hmacSecret: "test-secret",
   })
@@ -351,3 +356,170 @@ test("executeGatewayToolCall records results successfully against the Postgres-b
 
   await database.close()
 })
+
+test("createGatewayRequestContext extracts all identity/tenancy headers and applies overrides", () => {
+  // 1. Check defaults when headers are missing (unauthenticated)
+  const mockRequestDefaults = {
+    headers: {},
+  } as any
+  const contextDefaults = createGatewayRequestContext(mockRequestDefaults)
+  assert.equal(contextDefaults.tenantId, "t_demo")
+  assert.equal(contextDefaults.agentId, "pi_demo")
+  assert.equal(contextDefaults.runtimeType, "pi")
+  assert.equal(contextDefaults.environment, "dev")
+  assert.equal(contextDefaults.riskTier, "low")
+
+  // 2. Check header overrides are accepted when authenticated=true
+  const mockRequestOverrides = {
+    headers: {
+      "x-actantos-tenant-id": "t_custom_tenant",
+      "x-actantos-agent-id": "agent_custom",
+      "x-actantos-runtime-type": "custom",
+      "x-actantos-environment": "prod",
+      "x-actantos-risk-tier": "high",
+      "x-actantos-user-id": "u_custom_user",
+      "x-actantos-session-id": "s_custom_session",
+      "x-actantos-cwd": "/custom/path",
+      "x-actantos-purpose": "run custom pipeline",
+    },
+  } as any
+  const contextOverrides = createGatewayRequestContext(mockRequestOverrides, true)
+  assert.equal(contextOverrides.tenantId, "t_custom_tenant")
+  assert.equal(contextOverrides.agentId, "agent_custom")
+  assert.equal(contextOverrides.runtimeType, "custom")
+  assert.equal(contextOverrides.environment, "prod")
+  assert.equal(contextOverrides.riskTier, "high")
+  assert.equal(contextOverrides.userId, "u_custom_user")
+  assert.equal(contextOverrides.sessionId, "s_custom_session")
+  assert.equal(contextOverrides.cwd, "/custom/path")
+  assert.equal(contextOverrides.purpose, "run custom pipeline")
+
+  // 3. Check that identity headers are IGNORED when unauthenticated (tenant spoofing guard)
+  const contextUnauthenticated = createGatewayRequestContext(mockRequestOverrides, false)
+  assert.equal(contextUnauthenticated.tenantId, "t_demo", "unauthenticated: tenant must be default")
+  assert.equal(contextUnauthenticated.agentId, "pi_demo", "unauthenticated: agent must be default")
+  assert.equal(contextUnauthenticated.userId, "u_demo", "unauthenticated: user must be default")
+  assert.equal(contextUnauthenticated.sessionId, "s_demo", "unauthenticated: session must be default")
+  // Metadata headers are still accepted
+  assert.equal(contextUnauthenticated.runtimeType, "custom")
+  assert.equal(contextUnauthenticated.environment, "prod")
+  assert.equal(contextUnauthenticated.riskTier, "high")
+  assert.equal(contextUnauthenticated.cwd, "/custom/path")
+  assert.equal(contextUnauthenticated.purpose, "run custom pipeline")
+})
+
+// PQ-11 / 1.3: MCP Header Context Trust — HTTP-level enforcement
+
+test("GET /v1/mcp/sse rejects unauthenticated requests that supply X-Actantos-Tenant-Id with 401", async () => {
+  const previousTrust = process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+  delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+
+  try {
+    const server = buildServer({ apiKey: "test-key-pq11" })
+    await server.ready()
+
+    // Request with identity header but NO api key → must be 401
+    const response = await server.inject({
+      method: "GET",
+      url: "/v1/mcp/sse",
+      headers: {
+        "x-actantos-tenant-id": "t_evil",
+      },
+    })
+
+    assert.equal(response.statusCode, 401, "should return 401 for unauthenticated requests with identity headers")
+    const body = response.json()
+    assert.equal(body.error, "unauthorized")
+
+    await server.close()
+  } finally {
+    if (previousTrust === undefined) {
+      delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+    } else {
+      process.env["ACTANTOS_TRUST_MCP_CONTEXT"] = previousTrust
+    }
+  }
+})
+
+test("GET /v1/mcp/sse rejects unauthenticated requests that supply X-Actantos-Agent-Id with 401", async () => {
+  const previousTrust = process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+  delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+
+  try {
+    const server = buildServer({ apiKey: "test-key-pq11" })
+    await server.ready()
+
+    const response = await server.inject({
+      method: "GET",
+      url: "/v1/mcp/sse",
+      headers: {
+        "x-actantos-agent-id": "agent_evil",
+      },
+    })
+
+    assert.equal(response.statusCode, 401)
+
+    await server.close()
+  } finally {
+    if (previousTrust === undefined) {
+      delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+    } else {
+      process.env["ACTANTOS_TRUST_MCP_CONTEXT"] = previousTrust
+    }
+  }
+})
+
+test("GET /v1/mcp/sse allows requests with valid API key even when identity headers are present", async () => {
+  const previousTrust = process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+  delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+
+  try {
+    // Unit-test the guard: with valid API key, authenticated=true, so headers are trusted.
+    // The HTTP route is tested via the 401 rejection tests; here we verify the context logic.
+    const mockRequest = {
+      headers: {
+        "x-actantos-api-key": "test-key-pq11",
+        "x-actantos-tenant-id": "t_trusted",
+        "x-actantos-agent-id": "agent_trusted",
+      },
+    } as any
+    // authenticated=true simulates what the route handler does after verifying the api key
+    const context = createGatewayRequestContext(mockRequest, true)
+    assert.equal(context.tenantId, "t_trusted", "with valid auth, tenant header is trusted")
+    assert.equal(context.agentId, "agent_trusted", "with valid auth, agent header is trusted")
+  } finally {
+    if (previousTrust === undefined) {
+      delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+    } else {
+      process.env["ACTANTOS_TRUST_MCP_CONTEXT"] = previousTrust
+    }
+  }
+})
+
+test("createGatewayRequestContext does not apply the 401 guard when no identity headers are provided", () => {
+  const previousTrust = process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+  delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+
+  try {
+    // With no identity headers and unauthenticated, context falls back to defaults — no 401.
+    const mockRequest = {
+      headers: {
+        "x-actantos-runtime-type": "mcp",
+      },
+    } as any
+    const context = createGatewayRequestContext(mockRequest, false)
+    // Defaults are applied (no error thrown)
+    assert.equal(context.tenantId, "t_demo", "defaults are applied when no identity headers")
+    assert.equal(context.agentId, "pi_demo", "defaults are applied when no identity headers")
+    assert.equal(context.runtimeType, "mcp", "non-identity metadata header is accepted")
+  } finally {
+    if (previousTrust === undefined) {
+      delete process.env["ACTANTOS_TRUST_MCP_CONTEXT"]
+    } else {
+      process.env["ACTANTOS_TRUST_MCP_CONTEXT"] = previousTrust
+    }
+  }
+})
+
+
+

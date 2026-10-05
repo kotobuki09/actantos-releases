@@ -5,6 +5,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 import type { ToolCallContext } from "./contracts.ts"
+import { commandFromRequest } from "./decision-command.ts"
 import type { CedarDecision, CedarProvider } from "./fake-cedar-provider.ts"
 
 type CedarCliProviderOptions = {
@@ -19,6 +20,7 @@ type CedarCliProviderOptions = {
 
 type CedarAuthorizeResponse = {
   readonly decision: "ALLOW" | "DENY"
+  readonly reasonCode?: string
 }
 
 type CedarAuthorizeInput = {
@@ -63,13 +65,37 @@ const defaultPolicySource = `permit (
 )
 when {
   resource.credential_access == false
+  && (resource.path == "" || resource.workspace_path == "/workspace")
 };`
+
+/**
+ * The workspace the shipped policy confines file operations to.
+ *
+ * It is a constant rather than configuration because the same value is compared here, in the
+ * Cedar policy text, and by the built-in evaluator that mirrors it. Three copies of one setting
+ * would be three places to forget.
+ *
+ * The constraint applies only when the resource has a path. A network call carries a `url` and no
+ * `path`, and a filesystem boundary is not the right test for it — constraining those to a
+ * directory denied every outbound call in the v2 runtime suite.
+ */
+const defaultWorkspacePath = "/workspace"
 const permitAllPolicySource = "permit(principal, action, resource);"
 const denyAllPolicySource = "forbid(principal, action, resource);"
 
 export const buildCedarAuthorizeInput = (context: ToolCallContext): CedarAuthorizeInput => {
   const resourcePath = String(context.resource["path"] ?? "")
   const credentialAccess = context.normalized.credential_access
+
+  // The workspace the command will actually be mounted with. This was previously invisible to
+  // policy: the executor bound it into the command digest, so a token could not change it after
+  // authorization, but nothing stopped an authorizer from approving a command against one
+  // resource path while the caller bound an unrelated host directory.
+  //
+  // Derived through `commandFromRequest` so it is the same value the digest covers. Two separate
+  // derivations would be free to disagree, and a disagreement here is exactly the hole the digest
+  // closes elsewhere.
+  const workspacePath = commandFromRequest(context).workspacePath
 
   return {
     request: {
@@ -103,6 +129,25 @@ export const buildCedarAuthorizeInput = (context: ToolCallContext): CedarAuthori
         attrs: {
           credential_access: credentialAccess,
           path: resourcePath,
+          // Additive: a policy that ignores this attribute behaves exactly as before, so no
+          // existing policy silently changes meaning.
+          workspace_path: workspacePath,
+          // Also additive, and for the same reason. These two are what make a read-only grant
+          // expressible at all. `policies/templates/mcp-readonly.cedar` has to be able to say
+          // "this tool does not mutate", and before this the MCP gateway's mutation and
+          // destructive verdicts were computed by `normalizeMcpTool` and then dropped — never
+          // reaching the policy engine. The template shipped inert for that reason: it named an
+          // action the gateway never produces and could not have consulted the mutation flag
+          // even if it had.
+          //
+          // Absent reads as `true`, not `false`. Both fields are optional in the request schema,
+          // and defaulting an unknown mutation status to "does not mutate" would fail OPEN: a
+          // policy testing `resource.mutation == false` would permit a call whose mutation
+          // status nobody determined. Cedar also declines to decide on a missing attribute, so
+          // omitting them would make such a policy permit nothing at all. Reading them as
+          // mutating is the direction that denies.
+          mutation: context.normalized.mutation ?? true,
+          destructive: context.normalized.destructive ?? true,
         },
         parents: [],
       },
@@ -118,6 +163,7 @@ export class CedarCliProvider implements CedarProvider {
   readonly #authorizeCommand: (
     options: CedarAuthorizeCommandOptions,
   ) => Promise<CedarAuthorizeCommandResult>
+  #activePolicySource?: string
 
   constructor(options: CedarCliProviderOptions = {}) {
     this.#binaryPath = options.binaryPath ?? "cedar"
@@ -127,8 +173,12 @@ export class CedarCliProvider implements CedarProvider {
     this.#authorizeCommand = options.authorizeCommand ?? runAuthorizeCommand
   }
 
+  reloadPolicy(newPolicyContent: string): void {
+    this.#activePolicySource = newPolicyContent
+  }
+
   async evaluate(context: ToolCallContext): Promise<CedarDecision> {
-    const policySource = await readFile(this.#policyPath, "utf8")
+    const policySource = this.#activePolicySource ?? await readFile(this.#policyPath, "utf8")
     const builtInDecision = evaluateBuiltInPolicy(policySource, context)
     if (builtInDecision !== undefined) {
       return builtInDecision
@@ -137,28 +187,35 @@ export class CedarCliProvider implements CedarProvider {
     const workingDirectory = await mkdtemp(path.join(tmpdir(), "cedar-cli-"))
 
     try {
+      const dynamicPolicyPath = path.join(workingDirectory, "policies.cedar")
       const requestPath = path.join(workingDirectory, "request.json")
       const entitiesPath = path.join(workingDirectory, "entities.json")
       const authorizeInput = buildCedarAuthorizeInput(context)
       const requestPayload = JSON.stringify(authorizeInput.request)
       const entitiesPayload = JSON.stringify(authorizeInput.entities)
 
+      await writeFile(dynamicPolicyPath, policySource, "utf8")
       await writeFile(requestPath, requestPayload, "utf8")
       await writeFile(entitiesPath, entitiesPayload, "utf8")
 
       const output = await this.#runAuthorize(
+        dynamicPolicyPath,
         requestPath,
         entitiesPath,
         requestPayload,
         entitiesPayload,
       )
-      return output.decision === "ALLOW" ? "permit" : "forbid"
+      return {
+        decision: output.decision === "ALLOW" ? "permit" : "forbid",
+        ...(output.reasonCode !== undefined ? { reasonCode: output.reasonCode } : {})
+      } as CedarDecision
     } finally {
       await rm(workingDirectory, { recursive: true, force: true })
     }
   }
 
   async #runAuthorize(
+    dynamicPolicyPath: string,
     requestPath: string,
     entitiesPath: string,
     requestPayload: string,
@@ -169,7 +226,7 @@ export class CedarCliProvider implements CedarProvider {
     for (let attempt = 0; attempt < this.#maxAttempts; attempt += 1) {
       const result = await this.#authorizeCommand({
         binaryPath: this.#binaryPath,
-        policyPath: this.#policyPath,
+        policyPath: dynamicPolicyPath,
         entitiesPath,
         requestPath,
         requestPayload,
@@ -178,6 +235,29 @@ export class CedarCliProvider implements CedarProvider {
       })
 
       if (result.exitCode !== 0) {
+        // cedar-policy-cli exits 2 for a Deny as well as for a genuine evaluator error, so a
+        // non-zero code alone does not mean the policy failed to run. Measured against
+        // cedar-policy-cli 4.13.0: Allow exits 0, Deny exits 2 with "DENY" on stdout and an
+        // empty stderr.
+        //
+        // Treating that as a failure made every policy denial that reached the CLI surface as an
+        // exception instead of a decision. It went unnoticed because `evaluateBuiltInPolicy`
+        // answers the two known policies in-process, so no shipped policy ever reached the CLI
+        // to be denied.
+        //
+        // Only a bare DENY is honoured on a non-zero exit. An ALLOW with a non-zero code is
+        // refused, and a DENY carrying a diagnostic stays a failure, so neither an error nor a
+        // retryable recursion limit can be mistaken for a decision.
+        const decided = parseAuthorizeDecision(result.stdout)
+
+        if (
+          decided !== undefined &&
+          decided.decision === "DENY" &&
+          !carriesDiagnostic(result)
+        ) {
+          return decided
+        }
+
         lastFailure = createAuthorizeFailure({
           exitCode: result.exitCode,
           stdout: result.stdout,
@@ -202,7 +282,7 @@ export class CedarCliProvider implements CedarProvider {
 
       const parsedDecision = parseAuthorizeDecision(result.stdout)
       if (parsedDecision !== undefined) {
-        return { decision: parsedDecision }
+        return parsedDecision
       }
 
       throw new Error(`unexpected cedar output: ${result.stdout.trim()}`)
@@ -214,30 +294,38 @@ export class CedarCliProvider implements CedarProvider {
 
 const parseAuthorizeDecision = (
   stdout: string,
-): CedarAuthorizeResponse["decision"] | undefined => {
+): CedarAuthorizeResponse | undefined => {
   const trimmed = stdout.trim()
-  const firstLine = trimmed
-    .split(/\r?\n/u)
-    .map((line) => line.trim())
-    .find((line) => line.length > 0)
-
-  if (trimmed === "Allow" || trimmed === "Deny") {
-    return trimmed === "Allow" ? "ALLOW" : "DENY"
+  const lines = trimmed.split(/\r?\n/u).map(line => line.trim())
+  const firstLine = lines.find(line => line.length > 0)
+  
+  let decision: "ALLOW" | "DENY" | undefined
+  if (firstLine === "Allow" || firstLine === "ALLOW") decision = "ALLOW"
+  if (firstLine === "Deny" || firstLine === "DENY") decision = "DENY"
+  
+  if (!decision) {
+    if (trimmed === "ALLOW" || trimmed === "DENY") {
+       return { decision: trimmed as "ALLOW" | "DENY" }
+    }
+    if (trimmed === "Allow" || trimmed === "Deny") {
+       return { decision: trimmed === "Allow" ? "ALLOW" : "DENY" }
+    }
+    return undefined
   }
 
-  if (trimmed === "ALLOW" || trimmed === "DENY") {
-    return trimmed
+  let reasonCode: string | undefined
+  const noteIndex = lines.findIndex(line => line.startsWith("note: this decision was due to the following policies:"))
+  if (noteIndex !== -1 && noteIndex + 1 < lines.length) {
+    const nextLine = lines[noteIndex + 1]
+    if (nextLine !== undefined) {
+      reasonCode = nextLine.trim()
+    }
   }
 
-  if (firstLine === "Allow" || firstLine === "Deny") {
-    return firstLine === "Allow" ? "ALLOW" : "DENY"
-  }
-
-  if (firstLine === "ALLOW" || firstLine === "DENY") {
-    return firstLine
-  }
-
-  return undefined
+  return {
+    decision,
+    ...(reasonCode !== undefined ? { reasonCode } : {})
+  } as CedarAuthorizeResponse
 }
 
 const normalizePolicySource = (source: string): string =>
@@ -253,18 +341,53 @@ const evaluateBuiltInPolicy = (
   const normalizedSource = normalizePolicyShape(source)
 
   if (normalizedSource === normalizePolicyShape(defaultPolicySource)) {
-    return context.normalized.credential_access ? "forbid" : "permit"
+    // Mirrors the shipped policy term for term. `builtInMatchesCedar` in the test file runs the
+    // same contexts through the real CLI and fails if these two ever disagree, which is the only
+    // reason it is safe to answer the shipped policy without the binary at all.
+    if (context.normalized.credential_access) {
+      return { decision: "forbid" }
+    }
+
+    // `resource.path == ""` is the network-call shape: no path to confine to a workspace.
+    const { path: resourcePath } = context.resource
+    if (typeof resourcePath !== "string" || resourcePath.length === 0) {
+      return { decision: "permit" }
+    }
+
+    const { workspacePath } = commandFromRequest(context)
+
+    return { decision: workspacePath === defaultWorkspacePath ? "permit" : "forbid" }
   }
 
   if (normalizedSource === normalizePolicyShape(permitAllPolicySource)) {
-    return "permit"
+    return { decision: "permit" }
   }
 
   if (normalizedSource === normalizePolicyShape(denyAllPolicySource)) {
-    return "forbid"
+    return { decision: "forbid" }
   }
 
   return undefined
+}
+
+/**
+ * Whether a non-zero cedar run carries a diagnostic rather than a decision.
+ *
+ * cedar-policy-cli prints its decision as the first line and, when it also fails, appends the
+ * reason — a `×`-marked diagnostic or an "error while evaluating" line. Measured against
+ * cedar-policy-cli 4.13.0: Allow exits 0 with `ALLOW`; Deny exits 2 with a bare `DENY`; a parse
+ * error exits 1 with a `× failed to parse policy set`; a missing policy file exits 1 with
+ * `× failed to open policy set file`. A bare `DENY` is therefore a decision, while a `DENY`
+ * followed by a diagnostic is a failure that happens to start with the same word.
+ */
+const carriesDiagnostic = (result: CedarAuthorizeCommandResult): boolean => {
+  if (result.stderr.trim().length > 0) {
+    return true
+  }
+
+  return result.stdout
+    .split(/\r?\n/u)
+    .some(line => /^\s*[×x]\s/u.test(line) || line.includes("error while evaluating"))
 }
 
 const isTransientRecursionFailure = (

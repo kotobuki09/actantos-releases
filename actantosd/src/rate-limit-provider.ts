@@ -1,5 +1,5 @@
 import type { RiskEvaluation } from "./contracts.ts"
-import type { Database } from "./database.ts"
+import type { Database, DatabaseClient } from "./database.ts"
 
 export type RateLimitCheck = {
   readonly allowed: boolean
@@ -15,7 +15,7 @@ export type RateLimitCheckParams = {
 }
 
 export interface RateLimitProvider {
-  checkAndConsume(params: RateLimitCheckParams): Promise<RateLimitCheck>
+  checkAndConsume(params: RateLimitCheckParams, client?: DatabaseClient): Promise<RateLimitCheck>
 }
 
 type RateLimitRow = {
@@ -61,15 +61,15 @@ export class PostgresRateLimitProvider implements RateLimitProvider {
     this.#database = database
   }
 
-  async checkAndConsume(params: RateLimitCheckParams): Promise<RateLimitCheck> {
+  async checkAndConsume(params: RateLimitCheckParams, client?: DatabaseClient): Promise<RateLimitCheck> {
     const actionKey = buildActionKey(params.risk)
 
     if (actionKey === undefined) {
       return { allowed: true }
     }
 
-    return this.#database.transaction(async (client) => {
-      const rows = await client.query<RateLimitRow>(
+    const doWork = async (txClient: DatabaseClient): Promise<RateLimitCheck> => {
+      const rows = await txClient.query<RateLimitRow>(
         `
           SELECT id, current_value, limit_value, window_seconds, window_start
           FROM rate_limits
@@ -123,20 +123,25 @@ export class PostgresRateLimitProvider implements RateLimitProvider {
 
       for (const rateLimit of preparedRateLimits) {
         if (rateLimit.expired) {
-          await client.query(
+          await txClient.query(
             "UPDATE rate_limits SET current_value = 1, window_start = now() WHERE id = $1",
             [rateLimit.id],
           )
           continue
         }
 
-        await client.query(
+        await txClient.query(
           "UPDATE rate_limits SET current_value = current_value + 1 WHERE id = $1",
           [rateLimit.id],
         )
       }
 
       return { allowed: true }
-    })
+    }
+
+    if (client !== undefined) {
+      return doWork(client)
+    }
+    return this.#database.transaction(doWork)
   }
 }
