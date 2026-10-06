@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "package_version": "1.1.0",
-  "release_tag": "v1.1.0",
+  "package_version": "1.2.0",
+  "release_tag": "v1.2.0",
   "maturity_label": "quiet-open-core",
   "requires_approval_by": "engineering-leadership",
   "allow_telemetry": false,
@@ -16,9 +16,9 @@
     "self-host-npm",
     "self-host-docker-compose"
   ],
-  "evidence_date": "2026-07-12",
+  "evidence_date": "2026-10-06",
   "public_artifact_urls": [
-    "https://github.com/kotobuki09/actantos-releases/releases/tag/v1.0.0"
+    "https://github.com/kotobuki09/actantos-releases/releases/tag/v1.2.0"
   ],
   "claim_entries": [
     {
@@ -28,7 +28,7 @@
     },
     {
       "id": "public-quiet-open-core-tag",
-      "statement": "Mode A public package baseline is Quiet Open-Core artifact tag v1.0.0; semver is not production qualification",
+      "statement": "Mode A public package baseline is Quiet Open-Core artifact tag v1.2.0; semver is not production qualification",
       "claim_level": "release-verified"
     },
     {
@@ -80,17 +80,17 @@
   "repository_relationship": {
     "mode_a_kernel": {
       "path": "plan/actantosd",
-      "package_version": "1.0.0",
+      "package_version": "1.2.0",
       "stage": "quiet-open-core",
       "role": "mode-a-authoritative-kernel-tree"
     },
     "public_releases_tree": {
       "path": "actantos-releases/actantosd",
-      "package_version": "1.1.0",
-      "stage": "stage3-governed-enterprise-autonomy",
+      "package_version": "1.2.0",
+      "stage": "quiet-open-core",
       "role": "public-artifact-repo",
       "claim_level": "implemented",
-      "notes": "Not Mode A public maturity baseline; enterprise production-qualified language requires Mode B"
+      "notes": "Carries the same locally-verified quiet-open-core build as the plan kernel; not production-qualified and not a claim about any other host"
     },
     "website": {
       "path": "web/actantos",

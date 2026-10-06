@@ -14,12 +14,12 @@ const truthPath = path.join(rootDir, "release-maturity-truth.json")
 const loadTruth = () => JSON.parse(readFileSync(truthPath, "utf8"))
 
 const basePackage = () => ({
-  version: "1.1.0",
+  version: "1.2.0",
   actantos: { stage: "quiet-open-core" },
 })
 
 const baseManifest = () => ({
-  release_version: "v1.1.0",
+  release_version: "v1.2.0",
   stage: "quiet-open-core",
 })
 
@@ -38,7 +38,7 @@ test("CLI validator exits 0 for the in-repo truth source", () => {
     encoding: "utf8",
   })
   assert.match(output, /OK truth:/)
-  assert.match(output, /package=1\.1\.0/)
+  assert.match(output, /package=1\.2\.0/)
   assert.match(output, /maturity=quiet-open-core/)
 })
 
@@ -106,6 +106,6 @@ test("truth source forbids Mode A Stage 3 / v1.1.0 public baseline claim", () =>
   assert.ok(stage3, "expected deferred Stage 3 baseline claim entry")
   assert.equal(stage3.claim_level, "unsupported")
   assert.equal(truth.maturity_label, "quiet-open-core")
-  assert.equal(truth.package_version, "1.1.0")
+  assert.equal(truth.package_version, "1.2.0")
   assert.ok(truth.forbidden_maturity_encodings.includes("v1.1.0-production"))
 })

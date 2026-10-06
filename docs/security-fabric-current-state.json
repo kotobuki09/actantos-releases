@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-04T15:24:11.273Z",
-  "commit": "5670be12a42fa4a13e281bc42ef6e7e9c9e0ebe7",
+  "generated_at": "2026-10-06T00:49:16.679Z",
+  "commit": "b72a45a0907deba9cbc8f8d970ee8f2e4e16017e",
   "environment": {
     "node": "v26.4.0",
     "platform": "win32",
@@ -10,9 +10,9 @@
   "schema_version": 1,
   "product": {
     "package_name": "actantosd",
-    "package_version": "1.1.0",
+    "package_version": "1.2.0",
     "maturity_label": "quiet-open-core",
-    "release_tag": "v1.1.0",
+    "release_tag": "v1.2.0",
     "validation_class": "locally-verified",
     "active_implementation_maturity": "implemented"
   },

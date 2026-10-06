@@ -78,8 +78,8 @@ A failed check must block treating the tree as a publishable Mode A release.
 
 ## Mode A baseline (current)
 
-- Package: `1.0.0`
-- Tag: `v1.0.0`
+- Package: `1.2.0`
+- Tag: `v1.2.0`
 - Maturity: `quiet-open-core`
 - Overall validation class: `locally-verified`
 - Not claimed: Stage 3 / v1.1.0 as Mode A public baseline; production-qualified platform; living pilot proof

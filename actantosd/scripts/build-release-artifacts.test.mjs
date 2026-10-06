@@ -22,7 +22,7 @@ test("release artifact packs installable Quiet Open-Core tree", () => {
   })
 
   const packageJson = JSON.parse(readFileSync(path.join(rootDir, "package.json"), "utf8"))
-  assert.equal(packageJson.version, "1.1.0")
+  assert.equal(packageJson.version, "1.2.0")
   assert.equal(packageJson.actantos?.stage, "quiet-open-core")
 
   const truth = JSON.parse(readFileSync(path.join(rootDir, "release-maturity-truth.json"), "utf8"))
